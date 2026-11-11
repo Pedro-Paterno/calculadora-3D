@@ -358,6 +358,7 @@
         renderPrinters();
       });
 
+      // Consulta sem ordenação obrigatória por índice do Firestore para garantir compatibilidade móvel
       db.collection('users').doc(currentUser.uid).collection('projects').onSnapshot(snap => {
         const projects = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderProjects(projects);
@@ -450,7 +451,6 @@
       alert("Taxa de energia salva!");
     });
 
-    // Função auxiliar para converter "12:30" ou "12,30" ou "12.5" em horas decimais corretas
     function parseHours(inputVal) {
       if (!inputVal) return 0;
       let str = inputVal.toString().trim().replace(',', '.');
@@ -496,7 +496,6 @@
       const priceML = (priceDirect + 6) / (1 - 0.16);
       const priceShopee = (priceDirect + 4) / (1 - 0.20);
 
-      // Formatar horas para exibição amigável (ex: 12:30)
       let wholeHours = Math.floor(hours);
       let minutes = Math.round((hours - wholeHours) * 60);
       let hoursFormatted = `${wholeHours}h ${minutes}m`;
@@ -515,7 +514,8 @@
         priceDirect,
         priceML,
         priceShopee,
-        date: new Date().toLocaleDateString('pt-BR')
+        date: new Date().toLocaleDateString('pt-BR'),
+        timestamp: Date.now()
       };
 
       document.getElementById('res-filament-cost').textContent = `R$ ${filCost.toFixed(2)}`;
@@ -537,11 +537,9 @@
       try {
         await db.collection('users').doc(currentUser.uid).collection('projects').add(lastCalculation);
         
-        // Mostrar mensagem de sucesso na tela
         const msg = document.getElementById('save-success-msg');
         msg.classList.remove('hidden');
 
-        // Resetar campos do formulário da calculadora
         document.getElementById('calc-project-name').value = '';
         document.getElementById('calc-weight').value = '';
         document.getElementById('calc-hours').value = '';
