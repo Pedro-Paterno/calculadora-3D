@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrintCost 3D - Gestão & Precificação</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+darkMode: 'class',
+theme: {
+extend: {
+colors: {
+brand: {
+50: '#ecfeff',
+100: '#cffaff',
+500: '#06b6d4',
+600: '#0891b2',
+700: '#0e7490',
+900: '#164e63',
+}
+}
+}
+}
+}
+</script>
+<!-- FontAwesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Inter', sans-serif; }
+.glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); }
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-slate-950">
+<!-- APP CONTAINER -->
+<div id="app" class="flex-1 flex flex-col max-w-5xl mx-auto w-full px-4 py-6">
+<!-- HEADER / USER BAR -->
+<header class="glass border border-slate-800 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-xl">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-slate-950 font-bold text-xl shadow-lg shadow-cyan-500/20">
+<i class="fa-solid fa-cube"></i>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">PrintCost 3D</h1>
+<p class="text-xs text-slate-400">Calculadora & Gestão de Impressão</p>
+</div>
+</div>
+<!-- Auth Status / User Profile -->
+<div id="user-section" class="flex items-center gap-3 w-full sm:w-auto justify-end border-t sm:border-t-0 border-slate-800 pt-3 sm:pt-0">
+<!-- Preenchido via JavaScript -->
+</div>
+</header>
+<!-- AUTH MODAL / VIEW (Exibido se deslogado) -->
+<div id="auth-container" class="glass border border-slate-800 rounded-2xl p-6 sm:p-8 max-w-md mx-auto w-full shadow-2xl my-auto">
+<div class="text-center mb-6">
+<h2 id="auth-title" class="text-2xl font-bold text-white mb-1">Acessar Conta</h2>
+<p id="auth-subtitle" class="text-xs text-slate-400">Sincronize seus dados em nuvem no celular e PC</p>
+</div>
+<!-- Botão Google -->
+<button id="btn-google" class="w-full bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-3 transition shadow-sm mb-4">
+<svg class="w-5 h-5" viewBox="0 0 24 24">
+<path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+<path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+<path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+<path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+</svg>
+<span>Entrar com Google</span>
+</button>
+<div class="flex items-center my-4">
+<div class="flex-1 border-t border-slate-800"></div>
+<span class="px-3 text-xs text-slate-500 uppercase">ou com e-mail</span>
+<div class="flex-1 border-t border-slate-800"></div>
+</div>
+<!-- Form E-mail / Senha -->
+<form id="auth-form" class="space-y-4">
+<div id="username-field" class="hidden">
+<label class="block text-xs font-semibold text-slate-300 mb-1">Nome de Usuário</label>
+<input type="text" id="auth-username" placeholder="Seu nome ou da loja" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">E-mail</label>
+<input type="email" id="auth-email" required placeholder="seu@email.com" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Senha</label>
+<input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+<p id="password-hint" class="text-[10px] text-slate-500 mt-1 hidden">A senha deve ter no mínimo 8 caracteres, 1 número e 1 caractere especial (@#$%).</p>
+</div>
+<div id="auth-error" class="hidden text-xs text-rose-400 bg-rose-950/50 border border-rose-900 p-2.5 rounded-xl"></div>
+<button type="submit" id="auth-submit-btn" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-2.5 px-4 rounded-xl transition shadow-lg shadow-cyan-500/20">
+Entrar
+</button>
+</form>
+<div class="mt-4 text-center">
+<button id="toggle-auth-mode" class="text-xs text-cyan-400 hover:underline">
+Não tem uma conta? Cadastre-se
+</button>
+</div>
+</div>
+<!-- MAIN DASHBOARD (Exibido após login) -->
+<main id="dashboard" class="hidden flex-1 flex flex-col space-y-6">
+<!-- NAV TABS -->
+<nav class="flex bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
+<button onclick="switchTab('calculator')" id="tab-calculator" class="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-2 bg-cyan-500 text-slate-950 shadow-md">
+<i class="fa-solid fa-calculator"></i> <span class="hidden sm:inline">Calculadora</span>
+</button>
+<button onclick="switchTab('filaments')" id="tab-filaments" class="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-2">
+<i class="fa-solid fa-spool"></i> <span class="hidden sm:inline">Filamentos</span>
+</button>
+<button onclick="switchTab('printers')" id="tab-printers" class="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-2">
+<i class="fa-solid fa-print"></i> <span class="hidden sm:inline">Impressoras</span>
+</button>
+<button onclick="switchTab('projects')" id="tab-projects" class="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-2">
+<i class="fa-solid fa-folder-open"></i> <span class="hidden sm:inline">Salvos</span>
+</button>
+</nav>
+<!-- TAB 1: CALCULADORA -->
+<section id="view-calculator" class="space-y-6">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Form de Entrada de Dados -->
+<div class="lg:col-span-7 glass border border-slate-800 rounded-2xl p-5 space-y-4">
+<h2 class="text-base font-bold text-cyan-400 flex items-center gap-2">
+<i class="fa-solid fa-sliders"></i> Parâmetros do Projeto
+</h2>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Nome do Projeto / Peça</label>
+<input type="text" id="calc-name" placeholder="Ex: Suporte de Celular Articulado" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<!-- Seleção de Filamento e Peso -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Filamento Utilizado</label>
+<select id="calc-filament-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+<!-- Preenchido via JS -->
+</select>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Peso Consumido (g)</label>
+<input type="number" id="calc-weight" placeholder="Ex: 120" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+</div>
+<!-- Seleção de Impressora e Tempo -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Impressora</label>
+<select id="calc-printer-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+<!-- Preenchido via JS -->
+</select>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Tempo (Horas)</label>
+<input type="number" id="calc-hours" placeholder="0" min="0" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Tempo (Minutos)</label>
+<input type="number" id="calc-minutes" placeholder="0" min="0" max="59" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+</div>
+<!-- Insumos Extras & Licença Comercial -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-800 pt-3">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Insumos (Embalagem, Adesivos) R$</label>
+<input type="number" step="0.01" id="calc-extra-costs" placeholder="Ex: 3.50" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Licença do Modelo STL (R$)</label>
+<input type="number" step="0.01" id="calc-license-cost" placeholder="Ex: 10.00" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+</div>
+<!-- Tarifa Energia e Margem de Lucro Desejada -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Tarifa Energia (R$/kWh)</label>
+<input type="number" step="0.01" id="calc-energy-rate" value="0.95" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Margem de Lucro (%)</label>
+<input type="number" id="calc-profit-margin" value="100" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+</div>
+<button onclick="calculateAndSaveProject()" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2">
+<i class="fa-solid fa-floppy-disk"></i> Calcular e Salvar Projeto
+</button>
+</div>
+<!-- Card de Resultados & Sugestão de Preços -->
+<div class="lg:col-span-5 flex flex-col gap-4">
+<!-- Detalhamento dos Custos -->
+<div class="glass border border-slate-800 rounded-2xl p-5 space-y-3">
+<h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Resumo de Custos de Produção</h3>
+<div class="space-y-2 text-xs">
+<div class="flex justify-between py-1 border-b border-slate-800">
+<span class="text-slate-400">Filamento:</span>
+<span id="res-cost-filament" class="font-semibold text-white">R$ 0,00</span>
+</div>
+<div class="flex justify-between py-1 border-b border-slate-800">
+<span class="text-slate-400">Energia Elétrica:</span>
+<span id="res-cost-energy" class="font-semibold text-white">R$ 0,00</span>
+</div>
+<div class="flex justify-between py-1 border-b border-slate-800">
+<span class="text-slate-400">Desgaste do Bico/Impressora:</span>
+<span id="res-cost-nozzle" class="font-semibold text-white">R$ 0,00</span>
+</div>
+<div class="flex justify-between py-1 border-b border-slate-800">
+<span class="text-slate-400">Insumos & Licença:</span>
+<span id="res-cost-extras" class="font-semibold text-white">R$ 0,00</span>
+</div>
+<div class="flex justify-between py-2 text-sm font-bold text-cyan-400">
+<span>Custo Total de Produção:</span>
+<span id="res-cost-total">R$ 0,00</span>
+</div>
+</div>
+</div>
+<!-- Tabela de Precificação Recomendada em Marketplaces -->
+<div class="glass border border-slate-800 rounded-2xl p-5 space-y-3 flex-1 flex flex-col justify-between">
+<h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Precificação Recomendada</h3>
+<div class="space-y-3">
+<!-- Venda Direta -->
+<div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex justify-between items-center">
+<div>
+<p class="text-xs font-bold text-emerald-400">Venda Direta (PIX / Dinheiro)</p>
+<p class="text-[10px] text-slate-500">Sem taxas de intermediação</p>
+</div>
+<div class="text-right">
+<p id="price-direct" class="text-base font-bold text-white">R$ 0,00</p>
+<p id="profit-direct" class="text-[10px] text-emerald-400">Lucro: R$ 0,00</p>
+</div>
+</div>
+<!-- Mercado Livre -->
+<div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex justify-between items-center">
+<div>
+<p class="text-xs font-bold text-yellow-400">Mercado Livre (Clássico ~14%)</p>
+<p class="text-[10px] text-slate-500">Com margem ajustada</p>
+</div>
+<div class="text-right">
+<p id="price-ml" class="text-base font-bold text-white">R$ 0,00</p>
+<p id="profit-ml" class="text-[10px] text-slate-400">Lucro líquido garantido</p>
+</div>
+</div>
+<!-- Shopee -->
+<div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex justify-between items-center">
+<div>
+<p class="text-xs font-bold text-orange-400">Shopee (14% + R4,00)</p>
+<p class="text-[10px] text-slate-500">Com margem ajustada</p>
+</div>
+<div class="text-right">
+<p id="price-shopee" class="text-base font-bold text-white">R 0,00</p>
+<p id="profit-shopee" class="text-[10px] text-slate-400">Lucro líquido garantido</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- TAB 2: FILAMENTOS -->
+<section id="view-filaments" class="hidden space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Cadastro de Filamento -->
+<div class="md:col-span-5 glass border border-slate-800 rounded-2xl p-5 space-y-4">
+<h2 class="text-base font-bold text-cyan-400 flex items-center gap-2">
+<i class="fa-solid fa-plus-circle"></i> Cadastrar Filamento
+</h2>
+<form id="form-filament" class="space-y-3">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Nome / Marca / Cor</label>
+<input type="text" id="fil-name" required placeholder="Ex: Creality Ender PLA Preto" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Tipo</label>
+<select id="fil-type" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+<option value="PLA">PLA</option>
+<option value="PETG">PETG</option>
+<option value="TPU">TPU</option>
+<option value="ABS">ABS</option>
+<option value="Outro">Outro</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Peso Rolo (g)</label>
+<input type="number" id="fil-weight" required placeholder="1000" value="1000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+</div>
+<div class="p-3 bg-cyan-950/40 border border-cyan-800/50 rounded-xl">
+<label class="block text-xs font-bold text-cyan-300 mb-1">Valor Pago no Rolo (R$)</label>
+<input type="number" step="0.01" id="fil-price" required placeholder="Ex: 95.00" class="w-full bg-slate-900 border border-cyan-600 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 font-bold">
+<p class="text-[10px] text-cyan-400/80 mt-1">O aplicativo calcula automaticamente quanto custa cada grama.</p>
+</div>
+<button type="submit" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-2.5 rounded-xl transition shadow-lg shadow-cyan-500/20">
+Salvar Filamento
+</button>
+</form>
+</div>
+<!-- Lista de Filamentos -->
+<div class="md:col-span-7 glass border border-slate-800 rounded-2xl p-5 space-y-4">
+<h2 class="text-base font-bold text-slate-300 flex items-center justify-between">
+<span>Meus Filamentos Cadastrados</span>
+<span id="filaments-count" class="text-xs bg-slate-800 text-slate-400 px-2.5 py-1 rounded-lg">0 filamentos</span>
+</h2>
+<div id="filaments-list" class="space-y-3 max-h-[450px] overflow-y-auto pr-1">
+<!-- Preenchido via JS -->
+</div>
+</div>
+</div>
+</section>
+<!-- TAB 3: IMPRESSORAS -->
+<section id="view-printers" class="hidden space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Cadastro de Impressora -->
+<div class="md:col-span-5 glass border border-slate-800 rounded-2xl p-5 space-y-4">
+<h2 class="text-base font-bold text-cyan-400 flex items-center gap-2">
+<i class="fa-solid fa-print"></i> Cadastrar Impressora
+</h2>
+<form id="form-printer" class="space-y-3">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Nome da Impressora</label>
+<input type="text" id="printer-name" required placeholder="Ex: Anycubic Kobra 3" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Consumo Médio de Energia (Watts)</label>
+<input type="number" id="printer-power" required placeholder="Ex: 350" value="300" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div class="grid grid-cols-2 gap-3 border-t border-slate-800 pt-3">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Valor do Bico (R$)</label>
+<input type="number" step="0.01" id="printer-nozzle-price" required placeholder="Ex: 25.00" value="25.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Vida Útil Bico (Horas)</label>
+<input type="number" id="printer-nozzle-hours" required placeholder="Ex: 500" value="500" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+</div>
+<button type="submit" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-2.5 rounded-xl transition shadow-lg shadow-cyan-500/20">
+Salvar Impressora
+</button>
+</form>
+</div>
+<!-- Lista de Impressoras -->
+<div class="md:col-span-7 glass border border-slate-800 rounded-2xl p-5 space-y-4">
+<h2 class="text-base font-bold text-slate-300 flex items-center justify-between">
+<span>Minhas Impressoras</span>
+<span id="printers-count" class="text-xs bg-slate-800 text-slate-400 px-2.5 py-1 rounded-lg">0 impressoras</span>
+</h2>
+<div id="printers-list" class="space-y-3 max-h-[450px] overflow-y-auto pr-1">
+<!-- Preenchido via JS -->
+</div>
+</div>
+</div>
+</section>
+<!-- TAB 4: PROJETOS SALVOS -->
+<section id="view-projects" class="hidden space-y-4">
+<div class="flex justify-between items-center">
+<h2 class="text-base font-bold text-slate-300">Histórico de Projetos Salvos em Nuvem</h2>
+<input type="text" id="search-projects" onkeyup="filterProjects()" placeholder="Buscar projeto..." class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 w-48">
+</div>
+<div id="projects-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Preenchido via JS -->
+</div>
+</section>
+</main>
+</div>
+<!-- FIREBASE SDKs & LOGIC -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
