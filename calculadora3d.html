@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrintCost 3D - Gestão & Precificação</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+darkMode: 'class',
+theme: {
+extend: {
+colors: {
+brand: {
+50: '#ecfeff',
+100: '#cffaff',
+500: '#06b6d4',
+600: '#0891b2',
+700: '#0e7490',
+900: '#164e63',
+}
+}
+}
+}
+}
+</script>
+<!-- FontAwesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Inter', sans-serif; }
+.glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); }
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-slate-950">
+​<!-- APP CONTAINER -->
+<div id="app" class="flex-1 flex flex-col max-w-5xl mx-auto w-full px-4 py-6">
+​<!-- HEADER / USER BAR -->
+<header class="glass border border-slate-800 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-xl">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-slate-950 font-bold text-xl shadow-lg shadow-cyan-500/20">
+<i class="fa-solid fa-cube"></i>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">PrintCost 3D</h1>
+<p class="text-xs text-slate-400">Calculadora & Gestão de Impressão</p>
+</div>
+</div>
+​<!-- Auth Status / User Profile -->
+<div id="user-section" class="flex items-center gap-3 w-full sm:w-auto justify-end border-t sm:border-t-0 border-slate-800 pt-3 sm:pt-0">
+<!-- Preenchido via JavaScript -->
+</div>
+</header>
+​<!-- AUTH MODAL / VIEW (Exibido se deslogado) -->
+<div id="auth-container" class="glass border border-slate-800 rounded-2xl p-6 sm:p-8 max-w-md mx-auto w-full shadow-2xl my-auto">
+<div class="text-center mb-6">
+<h2 id="auth-title" class="text-2xl font-bold text-white mb-1">Acessar Conta</h2>
+<p id="auth-subtitle" class="text-xs text-slate-400">Sincronize seus dados em nuvem no celular e PC</p>
+</div>
+​<!-- Botão Google -->
+<button id="btn-google" class="w-full bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-3 transition shadow-sm mb-4">
+<svg class="w-5 h-5" viewBox="0 0 24 24">
+<path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+<path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+<path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+<path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+</svg>
+<span>Entrar com Google</span>
+</button>
+​<div class="flex items-center my-4">
+<div class="flex-1 border-t border-slate-800"></div>
+<span class="px-3 text-xs text-slate-500 uppercase">ou com e-mail</span>
+<div class="flex-1 border-t border-slate-800"></div>
+</div>
+​<!-- Form E-mail / Senha -->
+<form id="auth-form" class="space-y-4">
+<div id="username-field" class="hidden">
+<label class="block text-xs font-semibold text-slate-300 mb-1">Nome de Usuário</label>
+<input type="text" id="auth-username" placeholder="Seu nome ou da loja" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">E-mail</label>
+<input type="email" id="auth-email" required placeholder="seu@email.com" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Senha</label>
+<input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+<p id="password-hint" class="text-[10px] text-slate-500 mt-1 hidden">A senha deve ter no mínimo 8 caracteres, 1 número e 1 caractere especial (@#$%).</p>
+</div>
+​<div id="auth-error" class="hidden text-xs text-rose-400 bg-rose-950/50 border border-rose-900 p-2.5 rounded-xl"></div>
+​<button type="submit" id="auth-submit-btn" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-2.5 px-4 rounded-xl transition shadow-lg shadow-cyan-500/20">
+Entrar
+</button>
+</form>
+​<div class="mt-4 text-center">
+<button id="toggle-auth-mode" class="text-xs text-cyan-400 hover:underline">
+Não tem uma conta? Cadastre-se
+</button>
+</div>
+</div>
+​<!-- MAIN DASHBOARD (Exibido após login) -->
+<main id="dashboard" class="hidden flex-1 flex flex-col space-y-6">
+​<!-- NAV TABS -->
+<nav class="flex bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
+<button onclick="switchTab('calculator')" id="tab-calculator" class="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-2 bg-cyan-500 text-slate-950 shadow-md">
+<i class="fa-solid fa-calculator"></i> <span class="hidden sm:inline">Calculadora</span>
+</button>
+<button onclick="switchTab('filaments')" id="tab-filaments" class="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-2">
+<i class="fa-solid fa-spool"></i> <span class="hidden sm:inline">Filamentos</span>
+</button>
+<button onclick="switchTab('printers')" id="tab-printers" class="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-2">
+<i class="fa-solid fa-print"></i> <span class="hidden sm:inline">Impressoras</span>
+</button>
+<button onclick="switchTab('projects')" id="tab-projects" class="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-2">
+<i class="fa-solid fa-folder-open"></i> <span class="hidden sm:inline">Salvos</span>
+</button>
+</nav>
+​<!-- TAB 1: CALCULADORA -->
+<section id="view-calculator" class="space-y-6">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+​<!-- Form de Entrada de Dados -->
+<div class="lg:col-span-7 glass border border-slate-800 rounded-2xl p-5 space-y-4">
+<h2 class="text-base font-bold text-cyan-400 flex items-center gap-2">
+<i class="fa-solid fa-sliders"></i> Parâmetros do Projeto
+</h2>
+​<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Nome do Projeto / Peça</label>
+<input type="text" id="calc-name" placeholder="Ex: Suporte de Celular Articulado" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+​<!-- Seleção de Filamento e Peso -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Filamento Utilizado</label>
+<select id="calc-filament-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+<!-- Preenchido via JS -->
+</select>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Peso Consumido (g)</label>
+<input type="number" id="calc-weight" placeholder="Ex: 120" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+</div>
+​<!-- Seleção de Impressora e Tempo -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Impressora</label>
+<select id="calc-printer-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+<!-- Preenchido via JS -->
+</select>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Tempo (Horas)</label>
+<input type="number" id="calc-hours" placeholder="0" min="0" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Tempo (Minutos)</label>
+<input type="number" id="calc-minutes" placeholder="0" min="0" max="59" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+</div>
+​<!-- Insumos Extras & Licença Comercial -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-800 pt-3">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Insumos (Embalagem, Adesivos) R$</label>
+<input type="number" step="0.01" id="calc-extra-costs" placeholder="Ex: 3.50" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Licença do Modelo STL (R$)</label>
+<input type="number" step="0.01" id="calc-license-cost" placeholder="Ex: 10.00" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+</div>
+​<!-- Tarifa Energia e Margem de Lucro Desejada -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Tarifa Energia (R$/kWh)</label>
+<input type="number" step="0.01" id="calc-energy-rate" value="0.95" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Margem de Lucro (%)</label>
+<input type="number" id="calc-profit-margin" value="100" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+</div>
+​<button onclick="calculateAndSaveProject()" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2">
+<i class="fa-solid fa-floppy-disk"></i> Calcular e Salvar Projeto
+</button>
+</div>
+​<!-- Card de Resultados & Sugestão de Preços -->
+<div class="lg:col-span-5 flex flex-col gap-4">
+​<!-- Detalhamento dos Custos -->
+<div class="glass border border-slate-800 rounded-2xl p-5 space-y-3">
+<h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Resumo de Custos de Produção</h3>
+​<div class="space-y-2 text-xs">
+<div class="flex justify-between py-1 border-b border-slate-800">
+<span class="text-slate-400">Filamento:</span>
+<span id="res-cost-filament" class="font-semibold text-white">R$ 0,00</span>
+</div>
+<div class="flex justify-between py-1 border-b border-slate-800">
+<span class="text-slate-400">Energia Elétrica:</span>
+<span id="res-cost-energy" class="font-semibold text-white">R$ 0,00</span>
+</div>
+<div class="flex justify-between py-1 border-b border-slate-800">
+<span class="text-slate-400">Desgaste do Bico/Impressora:</span>
+<span id="res-cost-nozzle" class="font-semibold text-white">R$ 0,00</span>
+</div>
+<div class="flex justify-between py-1 border-b border-slate-800">
+<span class="text-slate-400">Insumos & Licença:</span>
+<span id="res-cost-extras" class="font-semibold text-white">R$ 0,00</span>
+</div>
+<div class="flex justify-between py-2 text-sm font-bold text-cyan-400">
+<span>Custo Total de Produção:</span>
+<span id="res-cost-total">R$ 0,00</span>
+</div>
+</div>
+</div>
+​<!-- Tabela de Precificação Recomendada em Marketplaces -->
+<div class="glass border border-slate-800 rounded-2xl p-5 space-y-3 flex-1 flex flex-col justify-between">
+<h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Precificação Recomendada</h3>
+​<div class="space-y-3">
+<!-- Venda Direta -->
+<div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex justify-between items-center">
+<div>
+<p class="text-xs font-bold text-emerald-400">Venda Direta (PIX / Dinheiro)</p>
+<p class="text-[10px] text-slate-500">Sem taxas de intermediação</p>
+</div>
+<div class="text-right">
+<p id="price-direct" class="text-base font-bold text-white">R$ 0,00</p>
+<p id="profit-direct" class="text-[10px] text-emerald-400">Lucro: R$ 0,00</p>
+</div>
+</div>
+​<!-- Mercado Livre -->
+<div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex justify-between items-center">
+<div>
+<p class="text-xs font-bold text-yellow-400">Mercado Livre (Clássico ~14%)</p>
+<p class="text-[10px] text-slate-500">Com margem ajustada</p>
+</div>
+<div class="text-right">
+<p id="price-ml" class="text-base font-bold text-white">R$ 0,00</p>
+<p id="profit-ml" class="text-[10px] text-slate-400">Lucro líquido garantido</p>
+</div>
+</div>
+​<!-- Shopee -->
+<div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex justify-between items-center">
+<div>
+<p class="text-xs font-bold text-orange-400">Shopee (14% + R4,00)</p>
+<p class="text-[10px] text-slate-500">Com margem ajustada</p>
+</div>
+<div class="text-right">
+<p id="price-shopee" class="text-base font-bold text-white">R 0,00</p>
+<p id="profit-shopee" class="text-[10px] text-slate-400">Lucro líquido garantido</p>
+</div>
+</div>
+</div>
+​</div>
+</div>
+​</div>
+</section>
+​<!-- TAB 2: FILAMENTOS -->
+<section id="view-filaments" class="hidden space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+​<!-- Cadastro de Filamento -->
+<div class="md:col-span-5 glass border border-slate-800 rounded-2xl p-5 space-y-4">
+<h2 class="text-base font-bold text-cyan-400 flex items-center gap-2">
+<i class="fa-solid fa-plus-circle"></i> Cadastrar Filamento
+</h2>
+​<form id="form-filament" class="space-y-3">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Nome / Marca / Cor</label>
+<input type="text" id="fil-name" required placeholder="Ex: Creality Ender PLA Preto" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Tipo</label>
+<select id="fil-type" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+<option value="PLA">PLA</option>
+<option value="PETG">PETG</option>
+<option value="TPU">TPU</option>
+<option value="ABS">ABS</option>
+<option value="Outro">Outro</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Peso Rolo (g)</label>
+<input type="number" id="fil-weight" required placeholder="1000" value="1000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+</div>
+​<div class="p-3 bg-cyan-950/40 border border-cyan-800/50 rounded-xl">
+<label class="block text-xs font-bold text-cyan-300 mb-1">Valor Pago no Rolo (R$)</label>
+<input type="number" step="0.01" id="fil-price" required placeholder="Ex: 95.00" class="w-full bg-slate-900 border border-cyan-600 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 font-bold">
+<p class="text-[10px] text-cyan-400/80 mt-1">O aplicativo calcula automaticamente quanto custa cada grama.</p>
+</div>
+​<button type="submit" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-2.5 rounded-xl transition shadow-lg shadow-cyan-500/20">
+Salvar Filamento
+</button>
+</form>
+</div>
+​<!-- Lista de Filamentos -->
+<div class="md:col-span-7 glass border border-slate-800 rounded-2xl p-5 space-y-4">
+<h2 class="text-base font-bold text-slate-300 flex items-center justify-between">
+<span>Meus Filamentos Cadastrados</span>
+<span id="filaments-count" class="text-xs bg-slate-800 text-slate-400 px-2.5 py-1 rounded-lg">0 filamentos</span>
+</h2>
+​<div id="filaments-list" class="space-y-3 max-h-[450px] overflow-y-auto pr-1">
+<!-- Preenchido via JS -->
+</div>
+</div>
+​</div>
+</section>
+​<!-- TAB 3: IMPRESSORAS -->
+<section id="view-printers" class="hidden space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+​<!-- Cadastro de Impressora -->
+<div class="md:col-span-5 glass border border-slate-800 rounded-2xl p-5 space-y-4">
+<h2 class="text-base font-bold text-cyan-400 flex items-center gap-2">
+<i class="fa-solid fa-print"></i> Cadastrar Impressora
+</h2>
+​<form id="form-printer" class="space-y-3">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Nome da Impressora</label>
+<input type="text" id="printer-name" required placeholder="Ex: Anycubic Kobra 3" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+​<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Consumo Médio de Energia (Watts)</label>
+<input type="number" id="printer-power" required placeholder="Ex: 350" value="300" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+​<div class="grid grid-cols-2 gap-3 border-t border-slate-800 pt-3">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Valor do Bico (R$)</label>
+<input type="number" step="0.01" id="printer-nozzle-price" required placeholder="Ex: 25.00" value="25.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Vida Útil Bico (Horas)</label>
+<input type="number" id="printer-nozzle-hours" required placeholder="Ex: 500" value="500" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+</div>
+</div>
+​<button type="submit" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-2.5 rounded-xl transition shadow-lg shadow-cyan-500/20">
+Salvar Impressora
+</button>
+</form>
+</div>
+​<!-- Lista de Impressoras -->
+<div class="md:col-span-7 glass border border-slate-800 rounded-2xl p-5 space-y-4">
+<h2 class="text-base font-bold text-slate-300 flex items-center justify-between">
+<span>Minhas Impressoras</span>
+<span id="printers-count" class="text-xs bg-slate-800 text-slate-400 px-2.5 py-1 rounded-lg">0 impressoras</span>
+</h2>
+​<div id="printers-list" class="space-y-3 max-h-[450px] overflow-y-auto pr-1">
+<!-- Preenchido via JS -->
+</div>
+</div>
+​</div>
+</section>
+​<!-- TAB 4: PROJETOS SALVOS -->
+<section id="view-projects" class="hidden space-y-4">
+<div class="flex justify-between items-center">
+<h2 class="text-base font-bold text-slate-300">Histórico de Projetos Salvos em Nuvem</h2>
+<input type="text" id="search-projects" onkeyup="filterProjects()" placeholder="Buscar projeto..." class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 w-48">
+</div>
+​<div id="projects-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Preenchido via JS -->
+</div>
+</section>
+​</main>
+</div>
+​<!-- FIREBASE SDKs & LOGIC -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-analytics.js";
+import {
+getAuth,
+signInWithEmailAndPassword,
+createUserWithEmailAndPassword,
+signOut,
+onAuthStateChanged,
+GoogleAuthProvider,
+signInWithPopup
+} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import {
+getFirestore,
+collection,
+addDoc,
+getDocs,
+deleteDoc,
+doc,
+query,
+where
+} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+​// CONFIGURAÇÃO DO SEU FIREBASE (Atualizada com suas credenciais)
+const firebaseConfig = {
+apiKey: "AIzaSyCtkQEQJk_Y7W-evRpY9xhwx2w9z9fafBQ",
+authDomain: "calculadora3d-f5b41.firebaseapp.com",
+projectId: "calculadora3d-f5b41",
+storageBucket: "calculadora3d-f5b41.firebasestorage.app",
+messagingSenderId: "490821992035",
+appId: "1:490821992035:web:39ed89a04b8df33a378256",
+measurementId: "G-17P0GCKQ6B"
+};
+​// Inicialização
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
+​// Estado Local
+let currentUser = null;
+let isSignUpMode = false;
+let filamentsData = [];
+let printersData = [];
+let projectsData = [];
+​// DOM Elements
+const authContainer = document.getElementById('auth-container');
+const dashboard = document.getElementById('dashboard');
+const userSection = document.getElementById('user-section');
+const authForm = document.getElementById('auth-form');
+const authTitle = document.getElementById('auth-title');
+const authSubmitBtn = document.getElementById('auth-submit-btn');
+const toggleAuthBtn = document.getElementById('toggle-auth-mode');
+const usernameField = document.getElementById('username-field');
+const passwordHint = document.getElementById('password-hint');
+const authError = document.getElementById('auth-error');
+const btnGoogle = document.getElementById('btn-google');
+​// Autenticação Observer
+onAuthStateChanged(auth, (user) => {
+if (user) {
+currentUser = user;
+authContainer.classList.add('hidden');
+dashboard.classList.remove('hidden');
+renderUserHeader(user);
+loadCloudData();
+} else {
+currentUser = null;
+authContainer.classList.remove('hidden');
+dashboard.classList.add('hidden');
+userSection.innerHTML = '';
+}
+});
+​// Alternar Login / Cadastro
+toggleAuthBtn.addEventListener('click', () => {
+isSignUpMode = !isSignUpMode;
+authTitle.textContent = isSignUpMode ? 'Criar Nova Conta' : 'Acessar Conta';
+authSubmitBtn.textContent = isSignUpMode ? 'Cadastrar' : 'Entrar';
+toggleAuthBtn.textContent = isSignUpMode ? 'Já tem uma conta? Faça login' : 'Não tem uma conta? Cadastre-se';
+​if (isSignUpMode) {
+usernameField.classList.remove('hidden');
+passwordHint.classList.remove('hidden');
+} else {
+usernameField.classList.add('hidden');
+passwordHint.classList.add('hidden');
+}
+});
+​// Submeter Form Auth (E-mail / Senha)
+authForm.addEventListener('submit', async (e) => {
+e.preventDefault();
+authError.classList.add('hidden');
+​const email = document.getElementById('auth-email').value;
+const password = document.getElementById('auth-password').value;
+​if (isSignUpMode) {
+// Validação de Senha Forte (8 car, 1 num, 1 simbolo)
+const hasMinLen = password.length >= 8;
+const hasNumber = /\d/.test(password);
+const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+​if (!hasMinLen || !hasNumber || !hasSymbol) {
+authError.textContent = 'A senha precisa ter pelo menos 8 caracteres, contendo 1 número e 1 símbolo (@#$%).';
+authError.classList.remove('hidden');
+return;
+}
+​try {
+await createUserWithEmailAndPassword(auth, email, password);
+} catch (err) {
+authError.textContent = 'Erro ao cadastrar: ' + err.message;
+authError.classList.remove('hidden');
+}
+} else {
+try {
+await signInWithEmailAndPassword(auth, email, password);
+} catch (err) {
+authError.textContent = 'E-mail ou senha inválidos.';
+authError.classList.remove('hidden');
+}
+}
+});
+​// Login Google
+btnGoogle.addEventListener('click', async () => {
+try {
+await signInWithPopup(auth, googleProvider);
+} catch (err) {
+authError.textContent = 'Erro ao autenticar com Google: ' + err.message;
+authError.classList.remove('hidden');
+}
+});
+​// Header User
+function renderUserHeader(user) {
+const name = user.displayName || user.email.split('@')[0];
+userSection.innerHTML = <div class="text-right hidden sm:block"> <p class="text-xs font-bold text-white">${name}</p> <p class="text-[10px] text-slate-400">${user.email}</p> </div> <button id="btn-logout" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2.5 rounded-xl transition text-xs flex items-center gap-1.5"> <i class="fa-solid fa-right-from-bracket"></i> Sair </button>;
+document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+}
+​// --- CARREGAR DADOS DA NUVEM (FIRESTORE) ---
+async function loadCloudData() {
+if (!currentUser) return;
+​// Filamentos
+const qFil = query(collection(db, "filaments"), where("userId", "==", currentUser.uid));
+const snapFil = await getDocs(qFil);
+filamentsData = snapFil.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+renderFilaments();
+updateFilamentSelect();
+​// Impressoras
+const qPrn = query(collection(db, "printers"), where("userId", "==", currentUser.uid));
+const snapPrn = await getDocs(qPrn);
+printersData = snapPrn.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+renderPrinters();
+updatePrinterSelect();
+​// Projetos
+const qPrj = query(collection(db, "projects"), where("userId", "==", currentUser.uid));
+const snapPrj = await getDocs(qPrj);
+projectsData = snapPrj.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+renderProjects();
+}
+​// --- GESTÃO DE FILAMENTOS ---
+document.getElementById('form-filament').addEventListener('submit', async (e) => {
+e.preventDefault();
+const name = document.getElementById('fil-name').value;
+const type = document.getElementById('fil-type').value;
+const weight = parseFloat(document.getElementById('fil-weight').value);
+const price = parseFloat(document.getElementById('fil-price').value);
+​const newFilament = {
+userId: currentUser.uid,
+name,
+type,
+weight,
+price,
+costPerGram: price / weight
+};
+​const docRef = await addDoc(collection(db, "filaments"), newFilament);
+filamentsData.push({ id: docRef.id, ...newFilament });
+​document.getElementById('form-filament').reset();
+renderFilaments();
+updateFilamentSelect();
+});
+​function renderFilaments() {
+const list = document.getElementById('filaments-list');
+document.getElementById('filaments-count').textContent = ${filamentsData.length} filamentos;
+​if(filamentsData.length === 0) {
+list.innerHTML = <p class="text-xs text-slate-500 text-center py-4">Nenhum filamento cadastrado ainda.</p>;
+return;
+}
+​list.innerHTML = filamentsData.map(f => <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex justify-between items-center"> <div> <p class="text-xs font-bold text-white">${f.name} <span class="text-[10px] bg-slate-800 text-cyan-400 px-1.5 py-0.5 rounded ml-1">${f.type}</span></p> <p class="text-[11px] text-slate-400">R$ ${f.price.toFixed(2)} por ${f.weight}g (<span class="text-cyan-400 font-semibold">R$ ${f.costPerGram.toFixed(4)}/g</span>)</p> </div> <button onclick="deleteFilament('${f.id}')" class="text-rose-400 hover:text-rose-300 p-1.5 text-xs"> <i class="fa-solid fa-trash"></i> </button> </div>).join('');
+}
+​window.deleteFilament = async (id) => {
+await deleteDoc(doc(db, "filaments", id));
+filamentsData = filamentsData.filter(f => f.id !== id);
+renderFilaments();
+updateFilamentSelect();
+};
+​function updateFilamentSelect() {
+const select = document.getElementById('calc-filament-select');
+select.innerHTML = filamentsData.map(f => <option value="${f.id}">${f.name} (R$ ${f.costPerGram.toFixed(3)}/g)</option>).join('');
+}
+​// --- GESTÃO DE IMPRESSORAS ---
+document.getElementById('form-printer').addEventListener('submit', async (e) => {
+e.preventDefault();
+const name = document.getElementById('printer-name').value;
+const power = parseFloat(document.getElementById('printer-power').value);
+const nozzlePrice = parseFloat(document.getElementById('printer-nozzle-price').value);
+const nozzleHours = parseFloat(document.getElementById('printer-nozzle-hours').value);
+​const nozzleCostPerHour = nozzlePrice / nozzleHours;
+​const newPrinter = {
+userId: currentUser.uid,
+name,
+power,
+nozzlePrice,
+nozzleHours,
+nozzleCostPerHour
+};
+​const docRef = await addDoc(collection(db, "printers"), newPrinter);
+printersData.push({ id: docRef.id, ...newPrinter });
+​document.getElementById('form-printer').reset();
+renderPrinters();
+updatePrinterSelect();
+});
+​function renderPrinters() {
+const list = document.getElementById('printers-list');
+document.getElementById('printers-count').textContent = ${printersData.length} impressoras;
+​if(printersData.length === 0) {
+list.innerHTML = <p class="text-xs text-slate-500 text-center py-4">Nenhuma impressora cadastrada.</p>;
+return;
+}
+​list.innerHTML = printersData.map(p => <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex justify-between items-center"> <div> <p class="text-xs font-bold text-white">${p.name}</p> <p class="text-[11px] text-slate-400">Consumo: ${p.power}W | Desgaste Bico: <span class="text-amber-400 font-semibold">R$ ${p.nozzleCostPerHour.toFixed(3)}/h</span></p> </div> <button onclick="deletePrinter('${p.id}')" class="text-rose-400 hover:text-rose-300 p-1.5 text-xs"> <i class="fa-solid fa-trash"></i> </button> </div>).join('');
+}
+​window.deletePrinter = async (id) => {
+await deleteDoc(doc(db, "printers", id));
+printersData = printersData.filter(p => p.id !== id);
+renderPrinters();
+updatePrinterSelect();
+};
+​function updatePrinterSelect() {
+const select = document.getElementById('calc-printer-select');
+select.innerHTML = printersData.map(p => <option value="${p.id}">${p.name} (${p.power}W)</option>).join('');
+}
+​// --- CÁLCULO E PERSISTÊNCIA DE PROJETOS ---
+window.calculateAndSaveProject = async () => {
+const name = document.getElementById('calc-name').value || 'Projeto Sem Nome';
+const filId = document.getElementById('calc-filament-select').value;
+const prnId = document.getElementById('calc-printer-select').value;
+const weight = parseFloat(document.getElementById('calc-weight').value) || 0;
+const hours = parseFloat(document.getElementById('calc-hours').value) || 0;
+const minutes = parseFloat(document.getElementById('calc-minutes').value) || 0;
+const extraCosts = parseFloat(document.getElementById('calc-extra-costs').value) || 0;
+const licenseCost = parseFloat(document.getElementById('calc-license-cost').value) || 0;
+const energyRate = parseFloat(document.getElementById('calc-energy-rate').value) || 0.95;
+const profitMargin = parseFloat(document.getElementById('calc-profit-margin').value) || 100;
+​const selectedFil = filamentsData.find(f => f.id === filId);
+const selectedPrn = printersData.find(p => p.id === prnId);
+​if (!selectedFil || !selectedPrn) {
+alert('Cadastre pelo menos um filamento e uma impressora primeiro!');
+return;
+}
+​const totalTimeHours = hours + (minutes / 60);
+​// Custos
+const costFilament = weight * selectedFil.costPerGram;
+const costEnergy = (selectedPrn.power / 1000) * totalTimeHours * energyRate;
+const costNozzle = selectedPrn.nozzleCostPerHour * totalTimeHours;
+const costExtras = extraCosts + licenseCost;
+const totalCost = costFilament + costEnergy + costNozzle + costExtras;
+​// Precificação
+const priceDirect = totalCost * (1 + (profitMargin / 100));
+const priceML = (priceDirect) / (1 - 0.14); // taxa ~14%
+const priceShopee = (priceDirect + 4) / (1 - 0.14); // taxa 14% + 4 reais
+​// Renderiza na tela
+document.getElementById('res-cost-filament').textContent = R$ ${costFilament.toFixed(2)};
+document.getElementById('res-cost-energy').textContent = R$ ${costEnergy.toFixed(2)};
+document.getElementById('res-cost-nozzle').textContent = R$ ${costNozzle.toFixed(2)};
+document.getElementById('res-cost-extras').textContent = R$ ${costExtras.toFixed(2)};
+document.getElementById('res-cost-total').textContent = R$ ${totalCost.toFixed(2)};
+​document.getElementById('price-direct').textContent = R$ ${priceDirect.toFixed(2)};
+document.getElementById('profit-direct').textContent = Lucro: R$ ${(priceDirect - totalCost).toFixed(2)};
+document.getElementById('price-ml').textContent = R$ ${priceML.toFixed(2)};
+document.getElementById('price-shopee').textContent = R$ ${priceShopee.toFixed(2)};
+​// Salva na nuvem
+const newProject = {
+userId: currentUser.uid,
+name,
+totalCost,
+priceDirect,
+priceML,
+priceShopee,
+date: new Date().toLocaleDateString('pt-BR')
+};
+​const docRef = await addDoc(collection(db, "projects"), newProject);
+projectsData.push({ id: docRef.id, ...newProject });
+renderProjects();
+};
+​function renderProjects() {
+const list = document.getElementById('projects-list');
+if (projectsData.length === 0) {
+list.innerHTML = <p class="text-xs text-slate-500 text-center col-span-2 py-4">Nenhum projeto salvo ainda.</p>;
+return;
+}
+​list.innerHTML = projectsData.map(p => <div class="glass border border-slate-800 rounded-xl p-4 space-y-2"> <div class="flex justify-between items-center"> <div> <h4 class="text-sm font-bold text-white">${p.name}</h4> <p class="text-[10px] text-slate-500">${p.date}</p> </div> <button onclick="deleteProject('${p.id}')" class="text-rose-400 text-xs p-1"> <i class="fa-solid fa-trash"></i> </button> </div> <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-800"> <div> <p class="text-slate-400">Custo Total:</p> <p class="font-bold text-cyan-400">R$ ${p.totalCost.toFixed(2)}</p> </div> <div> <p class="text-slate-400">Preço PIX:</p> <p class="font-bold text-emerald-400">R$ ${p.priceDirect.toFixed(2)}</p> </div> </div> </div>).join('');
+}
+​window.deleteProject = async (id) => {
+await deleteDoc(doc(db, "projects", id));
+projectsData = projectsData.filter(p => p.id !== id);
+renderProjects();
+};
+​// --- TABS NAVIGATION ---
+window.switchTab = (tab) => {
+['calculator', 'filaments', 'printers', 'projects'].forEach(t => {
+document.getElementById(view-${t}).classList.add('hidden');
+const tabBtn = document.getElementById(tab-${t});
+tabBtn.classList.remove('bg-cyan-500', 'text-slate-950', 'shadow-md');
+tabBtn.classList.add('text-slate-400');
+});
+​document.getElementById(view-${tab}).classList.remove('hidden');
+const activeBtn = document.getElementById(tab-${tab});
+activeBtn.classList.add('bg-cyan-500', 'text-slate-950', 'shadow-md');
+activeBtn.classList.remove('text-slate-400');
+};
+</script>
+</body>
+</html>
