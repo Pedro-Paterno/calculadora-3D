@@ -297,6 +297,7 @@
     let localFilaments = [];
     let localPrinters = [];
     let lastCalculation = null;
+    let isInitialLoading = true;
 
     function switchTab(tabName) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -347,6 +348,7 @@
 
     async function loadUserData() {
       if (!currentUser) return;
+      isInitialLoading = true;
       
       db.collection('users').doc(currentUser.uid).collection('filaments').onSnapshot(snap => {
         localFilaments = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -358,17 +360,51 @@
         renderPrinters();
       });
 
-      // Consulta sem ordenação obrigatória por índice do Firestore para garantir compatibilidade móvel
       db.collection('users').doc(currentUser.uid).collection('projects').onSnapshot(snap => {
         const projects = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderProjects(projects);
       });
 
+      // Carregar Configurações de Energia e Rascunho da Calculadora
       const configDoc = await db.collection('users').doc(currentUser.uid).collection('settings').doc('general').get();
-      if (configDoc.exists && configDoc.data().kwhRate) {
-        document.getElementById('cfg-kwh').value = configDoc.data().kwhRate;
+      if (configDoc.exists) {
+        const data = configDoc.data();
+        if (data.kwhRate) document.getElementById('cfg-kwh').value = data.kwhRate;
+        
+        // Restaurar rascunho da calculadora se existir
+        if (data.draft) {
+          if (data.draft.projectName) document.getElementById('calc-project-name').value = data.draft.projectName;
+          if (data.draft.weight) document.getElementById('calc-weight').value = data.draft.weight;
+          if (data.draft.hoursRaw) document.getElementById('calc-hours').value = data.draft.hoursRaw;
+          if (data.draft.extras) document.getElementById('calc-extras').value = data.draft.extras;
+          if (data.draft.profit) document.getElementById('calc-profit').value = data.draft.profit;
+          if (data.draft.filament) document.getElementById('calc-filament-select').value = data.draft.filament;
+          if (data.draft.printer) document.getElementById('calc-printer-select').value = data.draft.printer;
+        }
       }
+      isInitialLoading = false;
     }
+
+    // Salvar rascunho automaticamente na nuvem sempre que alterar os campos da calculadora
+    function saveDraftToCloud() {
+      if (!currentUser || isInitialLoading) return;
+      const draft = {
+        projectName: document.getElementById('calc-project-name').value,
+        weight: document.getElementById('calc-weight').value,
+        hoursRaw: document.getElementById('calc-hours').value,
+        extras: document.getElementById('calc-extras').value,
+        profit: document.getElementById('calc-profit').value,
+        filament: document.getElementById('calc-filament-select').value,
+        printer: document.getElementById('calc-printer-select').value
+      };
+      db.collection('users').doc(currentUser.uid).collection('settings').doc('general').set({ draft }, { merge: true });
+    }
+
+    // Eventos para disparar o autosave do rascunho
+    ['calc-project-name', 'calc-weight', 'calc-hours', 'calc-extras', 'calc-profit', 'calc-filament-select', 'calc-printer-select'].forEach(id => {
+      document.getElementById(id).addEventListener('input', saveDraftToCloud);
+      document.getElementById(id).addEventListener('change', saveDraftToCloud);
+    });
 
     document.getElementById('form-add-filament').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -382,6 +418,7 @@
     function renderFilaments() {
       const container = document.getElementById('filaments-list');
       const select = document.getElementById('calc-filament-select');
+      const currentVal = select.value;
       select.innerHTML = '<option value="">Selecione um Filamento</option>';
       if (localFilaments.length === 0) {
         container.innerHTML = '<p class="text-xs text-slate-500">Nenhum filamento cadastrado ainda.</p>';
@@ -403,6 +440,7 @@
         `;
         select.innerHTML += `<option value="${costPerGram}">${item.name} - R$ ${(costPerGram * 1000).toFixed(2)}/kg</option>`;
       });
+      if (currentVal) select.value = currentVal;
     }
 
     document.getElementById('form-add-printer').addEventListener('submit', async (e) => {
@@ -419,6 +457,7 @@
     function renderPrinters() {
       const container = document.getElementById('printers-list');
       const select = document.getElementById('calc-printer-select');
+      const currentVal = select.value;
       select.innerHTML = '<option value="">Selecione uma Impressora</option>';
       if (localPrinters.length === 0) {
         container.innerHTML = '<p class="text-xs text-slate-500">Nenhuma impressora cadastrada ainda.</p>';
@@ -439,6 +478,7 @@
         `;
         select.innerHTML += `<option value="${item.power}|${item.wear}|${item.nozzle || 15}">${item.name} (${item.power}W)</option>`;
       });
+      if (currentVal) select.value = currentVal;
     }
 
     async function deleteDoc(coll, id) {
@@ -548,6 +588,9 @@
         document.getElementById('calc-printer-select').value = '';
         document.getElementById('calc-result').classList.add('hidden');
         lastCalculation = null;
+
+        // Limpar rascunho na nuvem também
+        saveDraftToCloud();
 
         setTimeout(() => {
           msg.classList.add('hidden');
