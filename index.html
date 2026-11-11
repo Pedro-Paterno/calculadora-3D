@@ -94,6 +94,9 @@
         <button id="tab-btn-printers" onclick="switchTab('printers')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap">
           <i class="fa-solid fa-print"></i> Impressoras
         </button>
+        <button id="tab-btn-projects" onclick="switchTab('projects')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-folder-open"></i> Meus Projetos
+        </button>
         <button id="tab-btn-config" onclick="switchTab('config')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap">
           <i class="fa-solid fa-bolt"></i> Energia & Ajustes
         </button>
@@ -103,10 +106,15 @@
       <div id="tab-calc" class="tab-content space-y-6">
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
           <h3 class="font-bold text-white flex items-center gap-2 text-base">
-            <i class="fa-solid fa-sliders text-cyan-400"></i> Parâmetros da Impressão
+            <i class="fa-solid fa-sliders text-cyan-400"></i> Parâmetros da Impressão & Projeto
           </h3>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="md:col-span-2">
+              <label class="block text-xs font-medium text-slate-400 mb-1">Nome do Projeto / Peça</label>
+              <input type="text" id="calc-project-name" placeholder="Ex: Suporte de Headset Kobra" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-cyan-500">
+            </div>
+
             <div>
               <label class="block text-xs font-medium text-slate-400 mb-1">Selecionar Filamento</label>
               <select id="calc-filament-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-cyan-500">
@@ -148,7 +156,7 @@
 
           <!-- RESULTADOS DETALHADOS -->
           <div id="calc-result" class="hidden space-y-4 pt-2">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-center">
               <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-700">
                 <span class="text-[10px] text-slate-400 block uppercase">Filamento</span>
                 <span id="res-filament-cost" class="font-bold text-cyan-400 text-sm">R$ 0,00</span>
@@ -162,6 +170,10 @@
                 <span id="res-wear-cost" class="font-bold text-cyan-400 text-sm">R$ 0,00</span>
               </div>
               <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-700">
+                <span class="text-[10px] text-slate-400 block uppercase">Custo Bico</span>
+                <span id="res-nozzle-cost" class="font-bold text-cyan-400 text-sm">R$ 0,00</span>
+              </div>
+              <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-700 col-span-2 md:col-span-1">
                 <span class="text-[10px] text-slate-400 block uppercase">Custo Total</span>
                 <span id="res-total-cost" class="font-bold text-amber-400 text-sm">R$ 0,00</span>
               </div>
@@ -186,6 +198,10 @@
                   <p id="price-shopee" class="text-xl font-black text-orange-400">R$ 0,00</p>
                 </div>
               </div>
+              
+              <button id="save-project-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 mt-3">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Salvar Projeto na Nuvem
+              </button>
             </div>
           </div>
         </div>
@@ -214,12 +230,13 @@
       <!-- ABA 3: CADASTRO DE IMPRESSORAS -->
       <div id="tab-printers" class="tab-content hidden space-y-6">
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
-          <h3 class="font-bold text-white text-base"><i class="fa-solid fa-plus text-cyan-400"></i> Cadastrar Nova Impressora</h3>
-          <form id="form-add-printer" class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <input type="text" id="prn-name" placeholder="Ex: Anycubic Kobra 3 / Ender 3" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
-            <input type="number" id="prn-power" placeholder="Potência Watts (Ex: 150)" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
-            <input type="number" id="prn-wear" placeholder="Custo Desgaste R$/Hora (Ex: 0.50)" step="0.01" value="0.50" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
-            <button type="submit" class="md:col-span-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-colors">
+          <h3 class="font-bold text-white text-base"><i class="fa-solid fa-plus text-cyan-400"></i> Cadastrar Nova Impressora (com Bico)</h3>
+          <form id="form-add-printer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <input type="text" id="prn-name" placeholder="Ex: Anycubic Kobra X" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            <input type="number" id="prn-power" placeholder="Potência Watts (Ex: 300)" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            <input type="number" id="prn-wear" placeholder="Desgaste R$/h (Ex: 0.50)" step="0.01" value="0.50" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            <input type="number" id="prn-nozzle" placeholder="Valor do Bico R$ (Ex: 15.00)" step="0.01" value="15.00" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            <button type="submit" class="md:col-span-2 lg:col-span-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-colors">
               Salvar Impressora na Nuvem
             </button>
           </form>
@@ -231,14 +248,24 @@
         </div>
       </div>
 
-      <!-- ABA 4: CONFIGURAÇÕES DE ENERGIA -->
+      <!-- ABA 4: MEUS PROJETOS SALVOS -->
+      <div id="tab-projects" class="tab-content hidden space-y-6">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+          <h3 class="font-bold text-white text-base"><i class="fa-solid fa-folder-open text-cyan-400"></i> Projetos e Orçamentos Salvos</h3>
+          <div id="projects-list" class="space-y-3">
+            <p class="text-xs text-slate-500">Nenhum projeto salvo ainda. Calcule uma peça e clique em "Salvar Projeto".</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 5: CONFIGURAÇÕES DE ENERGIA -->
       <div id="tab-config" class="tab-content hidden space-y-6">
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4 max-w-md mx-auto">
           <h3 class="font-bold text-white text-base"><i class="fa-solid fa-bolt text-yellow-400"></i> Taxa da Conta de Energia</h3>
-          <p class="text-xs text-slate-400">Digite o valor por kWh cobrado pela sua concessionária (Ex: R$ 0.85 em SP).</p>
+          <p class="text-xs text-slate-400">Valor por kWh cobrado na sua residência (calculado da sua conta: R$ 0,96).</p>
           <div>
             <label class="block text-xs text-slate-400 mb-1">Preço do kWh (R$)</label>
-            <input type="number" id="cfg-kwh" step="0.01" value="0.85" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            <input type="number" id="cfg-kwh" step="0.01" value="0.96" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
           </div>
           <button id="save-kwh-btn" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-colors">
             Salvar Taxa de Energia
@@ -250,7 +277,6 @@
   </main>
 
   <script>
-    // FIREBASE CONFIG (Chave do seu projeto)
     const firebaseConfig = {
       apiKey: "AIzaSyCtkQEQJk_Y7W-evRpY9xhwx2w9z9fafBQ",
       authDomain: "calculadora3d-f5b41.firebaseapp.com",
@@ -267,8 +293,8 @@
     let currentUser = null;
     let localFilaments = [];
     let localPrinters = [];
+    let lastCalculation = null;
 
-    // NAVEGAÇÃO ENTRE ABAS
     function switchTab(tabName) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(el => {
@@ -281,7 +307,6 @@
       btn.classList.remove('text-slate-400');
     }
 
-    // OBSERVADOR DE LOGIN
     auth.onAuthStateChanged(user => {
       currentUser = user;
       if (user) {
@@ -297,7 +322,6 @@
       }
     });
 
-    // GOOGLE & EMAIL AUTH
     document.getElementById('google-btn').addEventListener('click', async () => {
       const provider = new firebase.auth.GoogleAuthProvider();
       try { await auth.signInWithPopup(provider); } catch (e) { await auth.signInWithRedirect(provider); }
@@ -318,36 +342,35 @@
 
     document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
 
-    // CARREGAR DADOS DO UTILIZADOR
     async function loadUserData() {
       if (!currentUser) return;
       
-      // Carregar Filamentos
       db.collection('users').doc(currentUser.uid).collection('filaments').onSnapshot(snap => {
         localFilaments = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderFilaments();
       });
 
-      // Carregar Impressoras
       db.collection('users').doc(currentUser.uid).collection('printers').onSnapshot(snap => {
         localPrinters = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderPrinters();
       });
 
-      // Carregar Configurações
+      db.collection('users').doc(currentUser.uid).collection('projects').onSnapshot(snap => {
+        const projects = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderProjects(projects);
+      });
+
       const configDoc = await db.collection('users').doc(currentUser.uid).collection('settings').doc('general').get();
       if (configDoc.exists && configDoc.data().kwhRate) {
         document.getElementById('cfg-kwh').value = configDoc.data().kwhRate;
       }
     }
 
-    // CADASTRO DE FILAMENTOS
     document.getElementById('form-add-filament').addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('fil-name').value;
       const price = parseFloat(document.getElementById('fil-price').value);
       const weight = parseFloat(document.getElementById('fil-weight').value);
-
       await db.collection('users').doc(currentUser.uid).collection('filaments').add({ name, price, weight });
       document.getElementById('form-add-filament').reset();
     });
@@ -355,13 +378,11 @@
     function renderFilaments() {
       const container = document.getElementById('filaments-list');
       const select = document.getElementById('calc-filament-select');
-      
       select.innerHTML = '<option value="">Selecione um Filamento</option>';
       if (localFilaments.length === 0) {
         container.innerHTML = '<p class="text-xs text-slate-500">Nenhum filamento cadastrado ainda.</p>';
         return;
       }
-
       container.innerHTML = '';
       localFilaments.forEach(item => {
         const costPerGram = item.price / item.weight;
@@ -380,41 +401,39 @@
       });
     }
 
-    // CADASTRO DE IMPRESSORAS
     document.getElementById('form-add-printer').addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('prn-name').value;
       const power = parseFloat(document.getElementById('prn-power').value);
       const wear = parseFloat(document.getElementById('prn-wear').value);
+      const nozzle = parseFloat(document.getElementById('prn-nozzle').value);
 
-      await db.collection('users').doc(currentUser.uid).collection('printers').add({ name, power, wear });
+      await db.collection('users').doc(currentUser.uid).collection('printers').add({ name, power, wear, nozzle });
       document.getElementById('form-add-printer').reset();
     });
 
     function renderPrinters() {
       const container = document.getElementById('printers-list');
       const select = document.getElementById('calc-printer-select');
-
       select.innerHTML = '<option value="">Selecione uma Impressora</option>';
       if (localPrinters.length === 0) {
         container.innerHTML = '<p class="text-xs text-slate-500">Nenhuma impressora cadastrada ainda.</p>';
         return;
       }
-
       container.innerHTML = '';
       localPrinters.forEach(item => {
         container.innerHTML += `
           <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
             <div>
               <p class="font-bold text-sm text-cyan-400">${item.name}</p>
-              <p class="text-xs text-slate-400">${item.power}W | Desgaste: R$ ${item.wear.toFixed(2)}/h</p>
+              <p class="text-xs text-slate-400">${item.power}W | Desgaste: R$ ${item.wear.toFixed(2)}/h | Bico: R$ ${(item.nozzle || 15).toFixed(2)}</p>
             </div>
             <button onclick="deleteDoc('printers', '${item.id}')" class="text-red-400 hover:text-red-300 text-xs p-2">
               <i class="fa-solid fa-trash"></i>
             </button>
           </div>
         `;
-        select.innerHTML += `<option value="${item.power}|${item.wear}">${item.name} (${item.power}W)</option>`;
+        select.innerHTML += `<option value="${item.power}|${item.wear}|${item.nozzle || 15}">${item.name} (${item.power}W)</option>`;
       });
     }
 
@@ -422,50 +441,64 @@
       await db.collection('users').doc(currentUser.uid).collection(coll).doc(id).delete();
     }
 
-    // SALVAR CONFIGURAÇÃO KWH
     document.getElementById('save-kwh-btn').addEventListener('click', async () => {
       const kwhRate = parseFloat(document.getElementById('cfg-kwh').value);
       await db.collection('users').doc(currentUser.uid).collection('settings').doc('general').set({ kwhRate }, { merge: true });
       alert("Taxa de energia salva!");
     });
 
-    // CÁLCULO FINAL DA IMPRESSÃO
     document.getElementById('calculate-btn').addEventListener('click', () => {
+      const projectName = document.getElementById('calc-project-name').value || "Peça Sem Nome";
       const costPerGram = parseFloat(document.getElementById('calc-filament-select').value) || 0;
       const printerVal = document.getElementById('calc-printer-select').value;
       const weight = parseFloat(document.getElementById('calc-weight').value) || 0;
       const hours = parseFloat(document.getElementById('calc-hours').value) || 0;
       const extras = parseFloat(document.getElementById('calc-extras').value) || 0;
       const profitMargin = parseFloat(document.getElementById('calc-profit').value) || 0;
-      const kwhRate = parseFloat(document.getElementById('cfg-kwh').value) || 0.85;
+      const kwhRate = parseFloat(document.getElementById('cfg-kwh').value) || 0.96;
 
-      let watts = 150;
+      let watts = 300;
       let wearRate = 0.50;
+      let nozzleCostTotal = 1.50; // Estimativa padrão proporcional por hora se não informado
+
       if (printerVal) {
         const parts = printerVal.split('|');
         watts = parseFloat(parts[0]);
         wearRate = parseFloat(parts[1]);
+        const nozzlePrice = parseFloat(parts[2]) || 15;
+        // Supõe vida útil média de 100 horas de impressão por bico
+        nozzleCostTotal = (nozzlePrice / 100) * hours;
       }
 
-      // 1. Custo Filamento
       const filCost = costPerGram * weight;
-      // 2. Custo Energia (Watts * Horas / 1000 * Taxa)
       const energyCost = ((watts * hours) / 1000) * kwhRate;
-      // 3. Desgaste da Máquina
       const wearCost = hours * wearRate;
-      // 4. Custo Total
-      const totalCost = filCost + energyCost + wearCost + extras;
+      const totalCost = filCost + energyCost + wearCost + nozzleCostTotal + extras;
 
-      // 5. Preço Direto (com Margem de Lucro)
       const priceDirect = totalCost * (1 + (profitMargin / 100));
-      // 6. Mercado Livre (~16% comissão + R$ 6 taxa fixa)
       const priceML = (priceDirect + 6) / (1 - 0.16);
-      // 7. Shopee (~20% comissão + R$ 4 taxa fixa)
       const priceShopee = (priceDirect + 4) / (1 - 0.20);
+
+      lastCalculation = {
+        projectName,
+        weight,
+        hours,
+        filCost,
+        energyCost,
+        wearCost,
+        nozzleCostTotal,
+        extras,
+        totalCost,
+        priceDirect,
+        priceML,
+        priceShopee,
+        date: new Date().toLocaleDateString('pt-BR')
+      };
 
       document.getElementById('res-filament-cost').textContent = `R$ ${filCost.toFixed(2)}`;
       document.getElementById('res-energy-cost').textContent = `R$ ${energyCost.toFixed(2)}`;
       document.getElementById('res-wear-cost').textContent = `R$ ${wearCost.toFixed(2)}`;
+      document.getElementById('res-nozzle-cost').textContent = `R$ ${nozzleCostTotal.toFixed(2)}`;
       document.getElementById('res-total-cost').textContent = `R$ ${totalCost.toFixed(2)}`;
 
       document.getElementById('price-direct').textContent = `R$ ${priceDirect.toFixed(2)}`;
@@ -474,6 +507,55 @@
 
       document.getElementById('calc-result').classList.remove('hidden');
     });
+
+    document.getElementById('save-project-btn').addEventListener('click', async () => {
+      if (!lastCalculation) return;
+      try {
+        await db.collection('users').doc(currentUser.uid).collection('projects').add(lastCalculation);
+        alert("Projeto salvo com sucesso na nuvem!");
+        switchTab('projects');
+      } catch (e) {
+        alert("Erro ao salvar projeto: " + e.message);
+      }
+    });
+
+    function renderProjects(projects) {
+      const container = document.getElementById('projects-list');
+      if (projects.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-500">Nenhum projeto salvo ainda.</p>';
+        return;
+      }
+      container.innerHTML = '';
+      projects.forEach(p => {
+        container.innerHTML += `
+          <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
+            <div class="flex justify-between items-center">
+              <div>
+                <h4 class="font-bold text-cyan-400 text-sm">${p.projectName}</h4>
+                <span class="text-[10px] text-slate-400">Salvo em: ${p.date} | ${p.weight}g | ${p.hours}h</span>
+              </div>
+              <button onclick="deleteDoc('projects', '${p.id}')" class="text-red-400 hover:text-red-300 text-xs p-2">
+                <i class="fa-solid fa-trash"></i> Excluir
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-center bg-slate-800/60 p-2.5 rounded-lg text-xs">
+              <div><span class="text-slate-400 block text-[10px]">Filamento</span>R$ ${p.filCost.toFixed(2)}</div>
+              <div><span class="text-slate-400 block text-[10px]">Energia</span>R$ ${p.energyCost.toFixed(2)}</div>
+              <div><span class="text-slate-400 block text-[10px]">Desgaste</span>R$ ${p.wearCost.toFixed(2)}</div>
+              <div><span class="text-slate-400 block text-[10px]">Bico</span>R$ ${p.nozzleCostTotal.toFixed(2)}</div>
+              <div><span class="text-amber-400 block text-[10px]">Custo Total</span>R$ ${p.totalCost.toFixed(2)}</div>
+            </div>
+
+            <div class="flex flex-wrap gap-3 text-xs pt-1">
+              <span class="text-emerald-400 font-bold">Pix: R$ ${p.priceDirect.toFixed(2)}</span>
+              <span class="text-yellow-400 font-bold">Mercado Livre: R$ ${p.priceML.toFixed(2)}</span>
+              <span class="text-orange-400 font-bold">Shopee: R$ ${p.priceShopee.toFixed(2)}</span>
+            </div>
+          </div>
+        `;
+      });
+    }
   </script>
 </body>
 </html>
