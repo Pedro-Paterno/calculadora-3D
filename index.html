@@ -3,51 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PrintCost 3D - Gestão & Calculadora</title>
+  <title>PrintCost 3D - Gestão Completa & Calculadora</title>
   
   <!-- Tailwind CSS & FontAwesome -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <!-- Firebase App & Services (v13.2.0 compat) -->
+  <!-- Firebase App, Auth e Firestore -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans pb-10">
 
-  <!-- BARRA SUPERIOR / HEADER -->
-  <header class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-50">
-    <div class="max-w-md mx-auto flex justify-between items-center">
-      <div class="flex items-center gap-2">
-        <div class="bg-cyan-500 text-slate-900 p-2 rounded-lg font-bold">
+  <!-- HEADER -->
+  <header class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-50 shadow-md">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="bg-cyan-500 text-slate-950 p-2.5 rounded-xl font-bold text-lg">
           <i class="fa-solid fa-cube"></i>
         </div>
         <div>
           <h1 class="font-bold text-lg text-cyan-400 leading-tight">PrintCost 3D</h1>
-          <p class="text-xs text-slate-400">Calculadora & Gestão</p>
+          <p class="text-xs text-slate-400">Calculadora & Gestão de Impressão</p>
         </div>
       </div>
-      <div id="user-profile" class="hidden flex items-center gap-2">
-        <span id="user-display-name" class="text-xs text-slate-300 font-medium truncate max-w-[100px]"></span>
-        <button id="logout-btn" class="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1 rounded hover:bg-red-500/30">
-          Sair
+      <div id="user-profile" class="hidden flex items-center gap-3">
+        <span id="user-display-name" class="text-xs text-slate-300 font-semibold bg-slate-700/60 px-3 py-1.5 rounded-lg border border-slate-600 truncate max-w-[150px]"></span>
+        <button id="logout-btn" class="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg hover:bg-red-500/30 transition-colors font-medium">
+          <i class="fa-solid fa-right-from-bracket"></i> Sair
         </button>
       </div>
     </div>
   </header>
 
-  <!-- CONTEÚDO PRINCIPAL -->
-  <main class="flex-1 max-w-md w-full mx-auto p-4 space-y-6">
+  <main class="flex-1 max-w-4xl w-full mx-auto p-4 space-y-6">
 
     <!-- TELA DE AUTENTICAÇÃO -->
-    <div id="auth-card" class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl space-y-5">
+    <div id="auth-card" class="max-w-md mx-auto bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl space-y-5">
       <div class="text-center space-y-1">
         <h2 class="text-2xl font-bold text-white">Acessar Conta</h2>
-        <p class="text-xs text-slate-400">Sincronize os seus dados em nuvem no celular e PC</p>
+        <p class="text-xs text-slate-400">Sincronize seus dados em nuvem no celular e PC</p>
       </div>
 
-      <!-- BOTÃO GOOGLE -->
       <button id="google-btn" class="w-full bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-3 transition-colors">
         <svg class="w-5 h-5" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -64,76 +62,195 @@
         <div class="flex-1 h-px bg-slate-700"></div>
       </div>
 
-      <!-- FORMULÁRIO DE EMAIL / SENHA -->
       <form id="email-form" class="space-y-4">
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-1">E-mail</label>
-          <input type="email" id="auth-email" placeholder="seu@email.com" required
-            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500">
+          <input type="email" id="auth-email" placeholder="seu@email.com" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500">
         </div>
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-1">Senha</label>
-          <input type="password" id="auth-password" placeholder="••••••••" required minlength="6"
-            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500">
+          <input type="password" id="auth-password" placeholder="••••••••" required minlength="6" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500">
         </div>
 
         <div class="grid grid-cols-2 gap-3 pt-2">
-          <button type="submit" id="login-btn" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-colors">
-            Entrar
-          </button>
-          <button type="button" id="register-btn" class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-3 rounded-xl text-sm transition-colors">
-            Criar Conta
-          </button>
+          <button type="submit" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-colors">Entrar</button>
+          <button type="button" id="register-btn" class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-3 rounded-xl text-sm transition-colors">Criar Conta</button>
         </div>
       </form>
-
       <div id="auth-error" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-400 text-center"></div>
     </div>
 
-    <!-- TELA PRINCIPAL (APÓS LOGIN) -->
+    <!-- PAINEL PRINCIPAL COM NAVEGAÇÃO -->
     <div id="app-dashboard" class="hidden space-y-6">
-      
-      <!-- CALCULADORA RÁPIDA -->
-      <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 space-y-4">
-        <h3 class="font-bold text-white flex items-center gap-2 text-sm">
-          <i class="fa-solid fa-calculator text-cyan-400"></i> Calculadora de Impressão 3D
-        </h3>
-        
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Peso da Peça (g)</label>
-            <input type="number" id="calc-weight" placeholder="100" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
+
+      <!-- MENU DE ABAS -->
+      <nav class="flex border-b border-slate-700 gap-2 text-sm font-semibold overflow-x-auto pb-1">
+        <button id="tab-btn-calc" onclick="switchTab('calc')" class="tab-btn active border-b-2 border-cyan-400 text-cyan-400 px-4 py-2 flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-calculator"></i> Calculadora
+        </button>
+        <button id="tab-btn-filaments" onclick="switchTab('filaments')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-spool"></i> Filamentos
+        </button>
+        <button id="tab-btn-printers" onclick="switchTab('printers')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-print"></i> Impressoras
+        </button>
+        <button id="tab-btn-config" onclick="switchTab('config')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-bolt"></i> Energia & Ajustes
+        </button>
+      </nav>
+
+      <!-- ABA 1: CALCULADORA COMPLETA -->
+      <div id="tab-calc" class="tab-content space-y-6">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+          <h3 class="font-bold text-white flex items-center gap-2 text-base">
+            <i class="fa-solid fa-sliders text-cyan-400"></i> Parâmetros da Impressão
+          </h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Selecionar Filamento</label>
+              <select id="calc-filament-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-cyan-500">
+                <option value="">Carregando filamentos...</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Selecionar Impressora</label>
+              <select id="calc-printer-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-cyan-500">
+                <option value="">Carregando impressoras...</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Peso da Peça (Gramas)</label>
+              <input type="number" id="calc-weight" placeholder="Ex: 120" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Tempo de Impressão (Horas)</label>
+              <input type="number" id="calc-hours" step="0.1" placeholder="Ex: 4.5" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Custos Extras / Licença STL (R$)</label>
+              <input type="number" id="calc-extras" placeholder="Ex: 5.00" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Margem de Lucro Desejada (%)</label>
+              <input type="number" id="calc-profit" placeholder="Ex: 100" value="100" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            </div>
           </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Preço do Rolo (R$)</label>
-            <input type="number" id="calc-spool-price" placeholder="120" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Tempo (Horas)</label>
-            <input type="number" id="calc-hours" placeholder="5" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Potência (Watts)</label>
-            <input type="number" id="calc-power" value="150" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
+
+          <button id="calculate-btn" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+            <i class="fa-solid fa-calculator"></i> Calcular Custo & Preço Sugerido
+          </button>
+
+          <!-- RESULTADOS DETALHADOS -->
+          <div id="calc-result" class="hidden space-y-4 pt-2">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+              <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-700">
+                <span class="text-[10px] text-slate-400 block uppercase">Filamento</span>
+                <span id="res-filament-cost" class="font-bold text-cyan-400 text-sm">R$ 0,00</span>
+              </div>
+              <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-700">
+                <span class="text-[10px] text-slate-400 block uppercase">Energia</span>
+                <span id="res-energy-cost" class="font-bold text-cyan-400 text-sm">R$ 0,00</span>
+              </div>
+              <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-700">
+                <span class="text-[10px] text-slate-400 block uppercase">Desgaste Máquina</span>
+                <span id="res-wear-cost" class="font-bold text-cyan-400 text-sm">R$ 0,00</span>
+              </div>
+              <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-700">
+                <span class="text-[10px] text-slate-400 block uppercase">Custo Total</span>
+                <span id="res-total-cost" class="font-bold text-amber-400 text-sm">R$ 0,00</span>
+              </div>
+            </div>
+
+            <!-- SIMULAÇÃO MARKETPLACE -->
+            <div class="bg-slate-900 border border-cyan-500/30 p-5 rounded-2xl space-y-3">
+              <h4 class="font-bold text-cyan-400 text-sm flex items-center gap-2">
+                <i class="fa-solid fa-store"></i> Simulação de Venda em Marketplaces
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
+                  <p class="text-xs text-slate-400">Venda Direta / Pix</p>
+                  <p id="price-direct" class="text-xl font-black text-emerald-400">R$ 0,00</p>
+                </div>
+                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
+                  <p class="text-xs text-slate-400">Mercado Livre (~16% + R$6)</p>
+                  <p id="price-ml" class="text-xl font-black text-yellow-400">R$ 0,00</p>
+                </div>
+                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
+                  <p class="text-xs text-slate-400">Shopee (~20% + R$4)</p>
+                  <p id="price-shopee" class="text-xl font-black text-orange-400">R$ 0,00</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
-        <button id="calculate-btn" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-colors">
-          Calcular Custo Final
-        </button>
+      <!-- ABA 2: CADASTRO DE FILAMENTOS -->
+      <div id="tab-filaments" class="tab-content hidden space-y-6">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+          <h3 class="font-bold text-white text-base"><i class="fa-solid fa-plus text-cyan-400"></i> Cadastrar Novo Filamento</h3>
+          <form id="form-add-filament" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input type="text" id="fil-name" placeholder="Ex: PLA Preto Voolt3D" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            <input type="number" id="fil-price" placeholder="Preço Rolo (Ex: 110)" step="0.01" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            <input type="number" id="fil-weight" placeholder="Peso Rolo em g (Ex: 1000)" value="1000" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            <button type="submit" class="md:col-span-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-colors">
+              Salvar Filamento na Nuvem
+            </button>
+          </form>
 
-        <div id="calc-result" class="hidden bg-slate-900/80 border border-cyan-500/30 p-4 rounded-xl text-center space-y-1">
-          <p class="text-xs text-slate-400">Custo Total de Produção</p>
-          <p id="total-cost" class="text-2xl font-black text-cyan-400">R$ 0,00</p>
+          <h4 class="font-bold text-slate-300 text-sm pt-4 border-t border-slate-700">Meus Filamentos Cadastrados</h4>
+          <div id="filaments-list" class="space-y-2">
+            <p class="text-xs text-slate-500">Nenhum filamento cadastrado ainda.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 3: CADASTRO DE IMPRESSORAS -->
+      <div id="tab-printers" class="tab-content hidden space-y-6">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+          <h3 class="font-bold text-white text-base"><i class="fa-solid fa-plus text-cyan-400"></i> Cadastrar Nova Impressora</h3>
+          <form id="form-add-printer" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input type="text" id="prn-name" placeholder="Ex: Anycubic Kobra 3 / Ender 3" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            <input type="number" id="prn-power" placeholder="Potência Watts (Ex: 150)" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            <input type="number" id="prn-wear" placeholder="Custo Desgaste R$/Hora (Ex: 0.50)" step="0.01" value="0.50" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            <button type="submit" class="md:col-span-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-colors">
+              Salvar Impressora na Nuvem
+            </button>
+          </form>
+
+          <h4 class="font-bold text-slate-300 text-sm pt-4 border-t border-slate-700">Minhas Impressoras Cadastradas</h4>
+          <div id="printers-list" class="space-y-2">
+            <p class="text-xs text-slate-500">Nenhuma impressora cadastrada ainda.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 4: CONFIGURAÇÕES DE ENERGIA -->
+      <div id="tab-config" class="tab-content hidden space-y-6">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4 max-w-md mx-auto">
+          <h3 class="font-bold text-white text-base"><i class="fa-solid fa-bolt text-yellow-400"></i> Taxa da Conta de Energia</h3>
+          <p class="text-xs text-slate-400">Digite o valor por kWh cobrado pela sua concessionária (Ex: R$ 0.85 em SP).</p>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Preço do kWh (R$)</label>
+            <input type="number" id="cfg-kwh" step="0.01" value="0.85" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+          </div>
+          <button id="save-kwh-btn" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-colors">
+            Salvar Taxa de Energia
+          </button>
         </div>
       </div>
 
     </div>
   </main>
 
-  <!-- LÓGICA JAVASCRIPT & FIREBASE -->
   <script>
-    // 1. CONFIGURAÇÃO DO FIREBASE (Projeto calculadora3d-f5b41)
+    // FIREBASE CONFIG (Chave do seu projeto)
     const firebaseConfig = {
       apiKey: "AIzaSyCtkQEQJk_Y7W-evRpY9xhwx2w9z9fafBQ",
       authDomain: "calculadora3d-f5b41.firebaseapp.com",
@@ -143,125 +260,218 @@
       appId: "1:490821992035:web:39ed89a04b8df33a378256"
     };
 
-    // Inicializar Firebase
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // ELEMENTOS DO DOM
-    const authCard = document.getElementById('auth-card');
-    const appDashboard = document.getElementById('app-dashboard');
-    const userProfile = document.getElementById('user-profile');
-    const userDisplayName = document.getElementById('user-display-name');
-    const authError = document.getElementById('auth-error');
+    let currentUser = null;
+    let localFilaments = [];
+    let localPrinters = [];
 
-    const googleBtn = document.getElementById('google-btn');
-    const emailForm = document.getElementById('email-form');
-    const registerBtn = document.getElementById('register-btn');
-    const logoutBtn = document.getElementById('logout-btn');
-
-    // EXIBIR ERRO
-    function showError(msg) {
-      authError.textContent = msg;
-      authError.classList.remove('hidden');
+    // NAVEGAÇÃO ENTRE ABAS
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(el => {
+        el.classList.remove('active', 'border-b-2', 'border-cyan-400', 'text-cyan-400');
+        el.classList.add('text-slate-400');
+      });
+      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+      const btn = document.getElementById(`tab-btn-${tabName}`);
+      btn.classList.add('active', 'border-b-2', 'border-cyan-400', 'text-cyan-400');
+      btn.classList.remove('text-slate-400');
     }
 
-    function clearError() {
-      authError.textContent = '';
-      authError.classList.add('hidden');
-    }
-
-    // 2. OBSERVADOR DE ESTADO DE AUTENTICAÇÃO
-    auth.onAuthStateChanged((user) => {
+    // OBSERVADOR DE LOGIN
+    auth.onAuthStateChanged(user => {
+      currentUser = user;
       if (user) {
-        // Usuário Logado
-        authCard.classList.add('hidden');
-        appDashboard.classList.remove('hidden');
-        userProfile.classList.remove('hidden');
-        userDisplayName.textContent = user.displayName || user.email.split('@')[0];
-        clearError();
+        document.getElementById('auth-card').classList.add('hidden');
+        document.getElementById('app-dashboard').classList.remove('hidden');
+        document.getElementById('user-profile').classList.remove('hidden');
+        document.getElementById('user-display-name').textContent = user.displayName || user.email;
+        loadUserData();
       } else {
-        // Usuário Deslogado
-        authCard.classList.remove('hidden');
-        appDashboard.classList.add('hidden');
-        userProfile.classList.add('hidden');
+        document.getElementById('auth-card').classList.remove('hidden');
+        document.getElementById('app-dashboard').classList.add('hidden');
+        document.getElementById('user-profile').classList.add('hidden');
       }
     });
 
-    // 3. LOGIN COM GOOGLE
-    googleBtn.addEventListener('click', async () => {
-      clearError();
+    // GOOGLE & EMAIL AUTH
+    document.getElementById('google-btn').addEventListener('click', async () => {
       const provider = new firebase.auth.GoogleAuthProvider();
-      try {
-        // Tenta abrir janela popup
-        await auth.signInWithPopup(provider);
-      } catch (err) {
-        console.warn('Popup bloqueado, tentando redirecionamento:', err);
-        try {
-          // Se popup for bloqueado em celulares, faz por redirect
-          await auth.signInWithRedirect(provider);
-        } catch (redirectErr) {
-          showError('Falha ao entrar com Google: ' + redirectErr.message);
-        }
-      }
+      try { await auth.signInWithPopup(provider); } catch (e) { await auth.signInWithRedirect(provider); }
     });
 
-    // 4. LOGIN COM E-MAIL E SENHA
-    emailForm.addEventListener('submit', async (e) => {
+    document.getElementById('email-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      clearError();
       const email = document.getElementById('auth-email').value;
-      const password = document.getElementById('auth-password').value;
-
-      try {
-        await auth.signInWithEmailAndPassword(email, password);
-      } catch (err) {
-        showError('Erro ao entrar: ' + err.message);
-      }
+      const pass = document.getElementById('auth-password').value;
+      try { await auth.signInWithEmailAndPassword(email, pass); } catch (e) { alert("Erro: " + e.message); }
     });
 
-    // 5. CADASTRO DE NOVO USUÁRIO
-    registerBtn.addEventListener('click', async () => {
-      clearError();
+    document.getElementById('register-btn').addEventListener('click', async () => {
       const email = document.getElementById('auth-email').value;
-      const password = document.getElementById('auth-password').value;
+      const pass = document.getElementById('auth-password').value;
+      try { await auth.createUserWithEmailAndPassword(email, pass); } catch (e) { alert("Erro: " + e.message); }
+    });
 
-      if (!email || !password) {
-        showError('Preencha o e-mail e a senha para criar uma conta.');
+    document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
+
+    // CARREGAR DADOS DO UTILIZADOR
+    async function loadUserData() {
+      if (!currentUser) return;
+      
+      // Carregar Filamentos
+      db.collection('users').doc(currentUser.uid).collection('filaments').onSnapshot(snap => {
+        localFilaments = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderFilaments();
+      });
+
+      // Carregar Impressoras
+      db.collection('users').doc(currentUser.uid).collection('printers').onSnapshot(snap => {
+        localPrinters = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderPrinters();
+      });
+
+      // Carregar Configurações
+      const configDoc = await db.collection('users').doc(currentUser.uid).collection('settings').doc('general').get();
+      if (configDoc.exists && configDoc.data().kwhRate) {
+        document.getElementById('cfg-kwh').value = configDoc.data().kwhRate;
+      }
+    }
+
+    // CADASTRO DE FILAMENTOS
+    document.getElementById('form-add-filament').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('fil-name').value;
+      const price = parseFloat(document.getElementById('fil-price').value);
+      const weight = parseFloat(document.getElementById('fil-weight').value);
+
+      await db.collection('users').doc(currentUser.uid).collection('filaments').add({ name, price, weight });
+      document.getElementById('form-add-filament').reset();
+    });
+
+    function renderFilaments() {
+      const container = document.getElementById('filaments-list');
+      const select = document.getElementById('calc-filament-select');
+      
+      select.innerHTML = '<option value="">Selecione um Filamento</option>';
+      if (localFilaments.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-500">Nenhum filamento cadastrado ainda.</p>';
         return;
       }
 
-      try {
-        await auth.createUserWithEmailAndPassword(email, password);
-      } catch (err) {
-        showError('Erro ao criar conta: ' + err.message);
+      container.innerHTML = '';
+      localFilaments.forEach(item => {
+        const costPerGram = item.price / item.weight;
+        container.innerHTML += `
+          <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
+            <div>
+              <p class="font-bold text-sm text-cyan-400">${item.name}</p>
+              <p class="text-xs text-slate-400">R$ ${item.price.toFixed(2)} / ${item.weight}g (R$ ${costPerGram.toFixed(3)}/g)</p>
+            </div>
+            <button onclick="deleteDoc('filaments', '${item.id}')" class="text-red-400 hover:text-red-300 text-xs p-2">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        `;
+        select.innerHTML += `<option value="${costPerGram}">${item.name} - R$ ${(costPerGram * 1000).toFixed(2)}/kg</option>`;
+      });
+    }
+
+    // CADASTRO DE IMPRESSORAS
+    document.getElementById('form-add-printer').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('prn-name').value;
+      const power = parseFloat(document.getElementById('prn-power').value);
+      const wear = parseFloat(document.getElementById('prn-wear').value);
+
+      await db.collection('users').doc(currentUser.uid).collection('printers').add({ name, power, wear });
+      document.getElementById('form-add-printer').reset();
+    });
+
+    function renderPrinters() {
+      const container = document.getElementById('printers-list');
+      const select = document.getElementById('calc-printer-select');
+
+      select.innerHTML = '<option value="">Selecione uma Impressora</option>';
+      if (localPrinters.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-500">Nenhuma impressora cadastrada ainda.</p>';
+        return;
       }
+
+      container.innerHTML = '';
+      localPrinters.forEach(item => {
+        container.innerHTML += `
+          <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
+            <div>
+              <p class="font-bold text-sm text-cyan-400">${item.name}</p>
+              <p class="text-xs text-slate-400">${item.power}W | Desgaste: R$ ${item.wear.toFixed(2)}/h</p>
+            </div>
+            <button onclick="deleteDoc('printers', '${item.id}')" class="text-red-400 hover:text-red-300 text-xs p-2">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        `;
+        select.innerHTML += `<option value="${item.power}|${item.wear}">${item.name} (${item.power}W)</option>`;
+      });
+    }
+
+    async function deleteDoc(coll, id) {
+      await db.collection('users').doc(currentUser.uid).collection(coll).doc(id).delete();
+    }
+
+    // SALVAR CONFIGURAÇÃO KWH
+    document.getElementById('save-kwh-btn').addEventListener('click', async () => {
+      const kwhRate = parseFloat(document.getElementById('cfg-kwh').value);
+      await db.collection('users').doc(currentUser.uid).collection('settings').doc('general').set({ kwhRate }, { merge: true });
+      alert("Taxa de energia salva!");
     });
 
-    // 6. LOGOUT (SAIR)
-    logoutBtn.addEventListener('click', () => {
-      auth.signOut();
-    });
-
-    // 7. CÁLCULO RÁPIDO DE CUSTO
+    // CÁLCULO FINAL DA IMPRESSÃO
     document.getElementById('calculate-btn').addEventListener('click', () => {
+      const costPerGram = parseFloat(document.getElementById('calc-filament-select').value) || 0;
+      const printerVal = document.getElementById('calc-printer-select').value;
       const weight = parseFloat(document.getElementById('calc-weight').value) || 0;
-      const price = parseFloat(document.getElementById('calc-spool-price').value) || 0;
       const hours = parseFloat(document.getElementById('calc-hours').value) || 0;
-      const watts = parseFloat(document.getElementById('calc-power').value) || 150;
+      const extras = parseFloat(document.getElementById('calc-extras').value) || 0;
+      const profitMargin = parseFloat(document.getElementById('calc-profit').value) || 0;
+      const kwhRate = parseFloat(document.getElementById('cfg-kwh').value) || 0.85;
 
-      // Custo de filamento: (preço do rolo / 1000g) * peso da peça
-      const filamentCost = (price / 1000) * weight;
+      let watts = 150;
+      let wearRate = 0.50;
+      if (printerVal) {
+        const parts = printerVal.split('|');
+        watts = parseFloat(parts[0]);
+        wearRate = parseFloat(parts[1]);
+      }
 
-      // Custo de energia (Média R$ 0,85 por kWh)
-      const kwh = (watts * hours) / 1000;
-      const energyCost = kwh * 0.85;
+      // 1. Custo Filamento
+      const filCost = costPerGram * weight;
+      // 2. Custo Energia (Watts * Horas / 1000 * Taxa)
+      const energyCost = ((watts * hours) / 1000) * kwhRate;
+      // 3. Desgaste da Máquina
+      const wearCost = hours * wearRate;
+      // 4. Custo Total
+      const totalCost = filCost + energyCost + wearCost + extras;
 
-      const total = filamentCost + energyCost;
+      // 5. Preço Direto (com Margem de Lucro)
+      const priceDirect = totalCost * (1 + (profitMargin / 100));
+      // 6. Mercado Livre (~16% comissão + R$ 6 taxa fixa)
+      const priceML = (priceDirect + 6) / (1 - 0.16);
+      // 7. Shopee (~20% comissão + R$ 4 taxa fixa)
+      const priceShopee = (priceDirect + 4) / (1 - 0.20);
 
-      document.getElementById('total-cost').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+      document.getElementById('res-filament-cost').textContent = `R$ ${filCost.toFixed(2)}`;
+      document.getElementById('res-energy-cost').textContent = `R$ ${energyCost.toFixed(2)}`;
+      document.getElementById('res-wear-cost').textContent = `R$ ${wearCost.toFixed(2)}`;
+      document.getElementById('res-total-cost').textContent = `R$ ${totalCost.toFixed(2)}`;
+
+      document.getElementById('price-direct').textContent = `R$ ${priceDirect.toFixed(2)}`;
+      document.getElementById('price-ml').textContent = `R$ ${priceML.toFixed(2)}`;
+      document.getElementById('price-shopee').textContent = `R$ ${priceShopee.toFixed(2)}`;
+
       document.getElementById('calc-result').classList.remove('hidden');
     });
   </script>
