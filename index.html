@@ -190,7 +190,6 @@
             <input type="number" id="prn-power" placeholder="Potência Watts (Ex: 300)" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
             <input type="number" id="prn-wear" placeholder="Desgaste R$/h (Ex: 0.50)" step="0.01" value="0.50" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
             <input type="number" id="prn-nozzle" placeholder="Valor do Bico R$ (Ex: 15.00)" step="0.01" value="15.00" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
-            <input type="number" id="prn-life" placeholder="Vida útil do bico em horas (Ex: 300)" min="1" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white md:col-span-2 lg:col-span-4">
             <button type="submit" class="md:col-span-2 lg:col-span-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-colors">Salvar Impressora na Nuvem</button>
           </form>
           <h4 class="font-bold text-slate-300 text-sm pt-4 border-t border-slate-700">Minhas Impressoras Cadastradas</h4>
@@ -420,9 +419,8 @@
       const power = parseFloat($('prn-power').value);
       const wear = parseFloat($('prn-wear').value);
       const nozzle = parseFloat($('prn-nozzle').value);
-      const nozzleLife = parseFloat($('prn-life').value);
       try {
-        await userRef().collection('printers').add({ name, power, wear, nozzle, nozzleLife });
+        await userRef().collection('printers').add({ name, power, wear, nozzle });
         $('form-add-printer').reset();
         $('prn-wear').value = '0.50';
         $('prn-nozzle').value = '15.00';
@@ -443,16 +441,15 @@
       let options = '';
       localPrinters.forEach(item => {
         const nozzle = num(item.nozzle) || 15;
-        const life = num(item.nozzleLife) || 100;
         html += `
           <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
             <div>
               <p class="font-bold text-sm text-cyan-400">${esc(item.name)}</p>
-              <p class="text-xs text-slate-400">${num(item.power)}W | Desgaste: R$ ${num(item.wear).toFixed(2)}/h | Bico: R$ ${nozzle.toFixed(2)} (dura ${life}h)</p>
+              <p class="text-xs text-slate-400">${num(item.power)}W | Desgaste: R$ ${num(item.wear).toFixed(2)}/h | Bico: R$ ${nozzle.toFixed(2)}</p>
             </div>
             <button onclick="deleteDoc('printers', '${esc(item.id)}')" class="text-red-400 hover:text-red-300 text-xs p-2"><i class="fa-solid fa-trash"></i></button>
           </div>`;
-        options += `<option value="${num(item.power)}|${num(item.wear)}|${nozzle}|${life}" data-id="${esc(item.id)}">${esc(item.name)} (${num(item.power)}W)</option>`;
+        options += `<option value="${num(item.power)}|${num(item.wear)}|${nozzle}" data-id="${esc(item.id)}">${esc(item.name)} (${num(item.power)}W)</option>`;
       });
       container.innerHTML = html;
       select.innerHTML += options;
@@ -503,8 +500,7 @@
         watts = parseFloat(parts[0]) || 0;
         wearRate = parseFloat(parts[1]) || 0;
         const nozzlePrice = parseFloat(parts[2]) || 15;
-        const nozzleLife = parseFloat(parts[3]) || 100;
-        nozzleCostTotal = (nozzlePrice / nozzleLife) * hours;
+        nozzleCostTotal = (nozzlePrice / 100) * hours;
       }
 
       // Peso e tempo são da impressão inteira; falhas aumentam esses custos
