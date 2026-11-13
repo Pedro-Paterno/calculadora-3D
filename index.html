@@ -546,8 +546,11 @@
     $('save-project-btn').addEventListener('click', async () => {
       if (!lastCalculation || !currentUser) return;
       try {
+        lastCalculation.projectName = $('calc-project-name').value.trim() || lastCalculation.projectName;
+        lastCalculation.client = $('calc-client').value.trim();
+        lastCalculation.image = currentImage;
         if (editingId) {
-          const { status, date, timestamp, ...data } = lastCalculation;
+          const { status, date, timestamp, id, ...data } = lastCalculation;
           await userRef().collection('projects').doc(editingId).update(data);
         } else {
           await userRef().collection('projects').add(lastCalculation);
@@ -613,14 +616,24 @@
       $('edit-banner').classList.remove('hidden');
       switchTab('calc');
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      if ($('calc-filament-select').value && $('calc-printer-select').value) {
-        $('edit-note').textContent = '(recalculado com os preços atuais)';
-        $('calculate-btn').click();
-      } else {
-        $('edit-note').textContent = '(escolha o filamento e a impressora e clique em Calcular)';
-        $('calc-result').classList.add('hidden');
-        lastCalculation = null;
-      }
+      // Mantém os valores já salvos (não recalcula): dá para trocar só foto/nome/cliente e salvar
+      const { id: _id, ...saved } = p;
+      lastCalculation = saved;
+      const f = (v) => `R$ ${num(v).toFixed(2)}`;
+      $('res-filament-cost').textContent = f(p.filCost);
+      $('res-energy-cost').textContent = f(p.energyCost);
+      $('res-wear-cost').textContent = f(p.wearCost);
+      $('res-nozzle-cost').textContent = f(p.nozzleCostTotal);
+      $('res-total-cost').textContent = f(p.totalCost);
+      $('price-direct').textContent = f(p.priceDirect);
+      $('price-ml').textContent = f(p.priceML);
+      $('price-shopee').textContent = f(p.priceShopee);
+      const sub = num(p.filCost) + num(p.energyCost) + num(p.wearCost) + num(p.nozzleCostTotal);
+      const failCost = sub * (1 - 1 / (1 + num(p.fail) / 100));
+      $('res-summary').innerHTML = `Extras/licença ${f(p.extras)} · Embalagem ${f(p.pack)} · Mão de obra ${f(p.labor)} · Falhas já incluídas ${f(failCost)}<br>Lucro por peça (venda direta): <b class="text-emerald-400">${f(num(p.priceDirect) - num(p.totalCost))}</b>`;
+      $('calc-result').classList.remove('hidden');
+      $('save-success-msg').classList.add('hidden');
+      $('edit-note').textContent = '(valores salvos mantidos: troque a foto, nome ou cliente e clique em Atualizar. Só clique em Calcular se quiser recalcular)';
     }
 
     async function setStatus(id, status) {
