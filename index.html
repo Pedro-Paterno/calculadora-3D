@@ -629,6 +629,7 @@
         lastCalculation.projectName = $('calc-project-name').value.trim() || lastCalculation.projectName;
         lastCalculation.category = $('calc-category').value.trim();
         lastCalculation.image = currentImage;
+        lastCalculation.sellPrice = parseFloat($('calc-sell').value) || 0;
         let projId = editingId;
         if (editingId) {
           const { status, date, timestamp, id, fileName, fileSize, fileChunks, fileEnc, ...data } = lastCalculation;
@@ -1097,6 +1098,14 @@
       } catch (e) { showError(e, 'Erro ao baixar o arquivo'); }
     }
 
+    async function setSellPrice(id) {
+      const v = parseFloat($('sell-' + id).value) || 0;
+      try {
+        await userRef().collection('projects').doc(id).update({ sellPrice: v });
+        clearError();
+      } catch (e) { showError(e, 'Erro ao salvar o preço'); }
+    }
+
     async function deleteProject(id) {
       if (!confirm('Excluir este projeto (e o arquivo anexado)?')) return;
       try {
@@ -1176,6 +1185,11 @@
             <span class="text-emerald-400 font-bold">Pix sugerido: R$ ${num(p.priceDirect).toFixed(2)}</span>
             <span class="text-yellow-400 font-bold">Mercado Livre: R$ ${num(p.priceML).toFixed(2)}</span>
             <span class="text-orange-400 font-bold">Shopee: R$ ${num(p.priceShopee).toFixed(2)}</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="text-slate-400">Meu preço de venda (R$):</span>
+            <input type="number" step="0.01" min="0" id="sell-${esc(p.id)}" value="${p.sellPrice ? num(p.sellPrice).toFixed(2) : ''}" placeholder="Ex: 25.00" class="w-24 bg-slate-800 border border-slate-600 rounded-lg p-1.5 text-white">
+            <button onclick="setSellPrice('${esc(p.id)}')" class="text-cyan-400 hover:text-cyan-300 font-bold">Salvar preço</button>
           </div>
           <div class="flex flex-wrap gap-4 text-xs">
             ${p.fileName ? `<button onclick="downloadProjectFile('${esc(p.id)}')" class="text-violet-400 hover:text-violet-300 inline-block max-w-[220px] truncate"><i class="fa-solid fa-download"></i> ${esc(p.fileName)}</button>` : ''}
