@@ -136,7 +136,7 @@
 
           <div class="flex items-center gap-3"><img id="calc-img-preview" alt="Foto da peça" class="hidden w-20 h-20 object-cover rounded-xl border border-slate-700"><div class="space-y-1"><label class="block text-xs font-medium text-slate-400">Foto da peça (opcional)</label><input type="file" id="calc-image" accept="image/*" class="text-xs text-slate-400"><button type="button" id="calc-img-remove" class="hidden text-xs text-red-400 underline">Remover foto</button></div></div>
           <div class="space-y-1">
-            <label class="block text-xs font-medium text-slate-400">Arquivo de impressão (STL ou 3MF, até 8 MB) - opcional</label>
+            <label class="block text-xs font-medium text-slate-400">Arquivo de impressão (STL ou 3MF, até 30 MB) - opcional</label>
             <input type="file" id="calc-file" accept=".stl,.3mf" class="text-xs text-slate-400">
             <p id="calc-file-info" class="text-xs text-slate-300"></p>
             <button type="button" id="calc-file-remove" class="hidden text-xs text-red-400 underline">Remover arquivo</button>
@@ -623,7 +623,7 @@
         lastCalculation.image = currentImage;
         let projId = editingId;
         if (editingId) {
-          const { status, date, timestamp, id, fileName, fileSize, fileChunks, ...data } = lastCalculation;
+          const { status, date, timestamp, id, fileName, fileSize, fileChunks, fileEnc, ...data } = lastCalculation;
           await userRef().collection('projects').doc(editingId).update(data);
         } else {
           const ref = await userRef().collection('projects').add(lastCalculation);
@@ -634,7 +634,7 @@
         } else if (removeFile && editingId) {
           await clearProjectFile(projId);
           const del = firebase.firestore.FieldValue.delete();
-          await userRef().collection('projects').doc(projId).update({ fileName: del, fileSize: del, fileChunks: del });
+          await userRef().collection('projects').doc(projId).update({ fileName: del, fileSize: del, fileChunks: del, fileEnc: del });
         }
         clearError();
 
@@ -911,7 +911,7 @@
     let pendingFile = null;
     let removeFile = false;
     let currentFileName = '';
-    const MAX_FILE = 8 * 1024 * 1024;
+    const MAX_FILE = 30 * 1024 * 1024;
 
     function updateFileInfo() {
       const info = $('calc-file-info');
@@ -1015,7 +1015,7 @@
       const f = e.target.files[0];
       if (!f) return;
       if (!/\.(stl|3mf)$/i.test(f.name)) { alert('Envie um arquivo .stl ou .3mf'); e.target.value = ''; return; }
-      if (f.size > MAX_FILE) { alert('Arquivo muito grande (máximo 8 MB).'); e.target.value = ''; return; }
+      if (f.size > MAX_FILE) { alert('Arquivo muito grande (máximo 30 MB).'); e.target.value = ''; return; }
       pendingFile = f; removeFile = false;
       updateFileInfo();
       if (currentImage) return; // já existe foto: não troca
@@ -1042,22 +1042,26 @@
     }
 
     async function uploadProjectFile(id, file) {
-      const dataUrl = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = () => res(r.result);
-        r.onerror = () => rej(r.error);
-        r.readAsDataURL(file);
-      });
-      const b64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
-      const SIZE = 700000;
-      const total = Math.ceil(b64.length / SIZE);
+      // STL costuma comprimir bem; 3MF já é compactado. Os bytes vão direto (sem base64) em pedaços de ~900 KB
+      let blob = file, enc = 'raw';
+      if (/\.stl$/i.test(file.name) && window.CompressionStream) {
+        try { blob = await new Response(file.stream().pipeThrough(new CompressionStream('gzip'))).blob(); enc = 'gzip'; }
+        catch (_) { blob = file; enc = 'raw'; }
+      }
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      const SIZE = 900000, GROUP = 4;
+      const total = Math.ceil(bytes.length / SIZE);
       const col = userRef().collection('projects').doc(id).collection('files');
       await clearProjectFile(id);
-      for (let i = 0; i < total; i++) {
-        await col.doc(String(i).padStart(4, '0')).set({ i, data: b64.slice(i * SIZE, (i + 1) * SIZE) });
-        $('save-label').textContent = `Enviando arquivo... ${Math.round(((i + 1) / total) * 100)}%`;
+      for (let i = 0; i < total; i += GROUP) {
+        const batch = db.batch();
+        for (let j = i; j < Math.min(total, i + GROUP); j++) {
+          batch.set(col.doc(String(j).padStart(4, '0')), { i: j, b: firebase.firestore.Blob.fromUint8Array(bytes.slice(j * SIZE, (j + 1) * SIZE)) });
+        }
+        await batch.commit();
+        $('save-label').textContent = `Enviando arquivo... ${Math.round((Math.min(total, i + GROUP) / total) * 100)}%`;
       }
-      await userRef().collection('projects').doc(id).update({ fileName: file.name, fileSize: file.size, fileChunks: total });
+      await userRef().collection('projects').doc(id).update({ fileName: file.name, fileSize: file.size, fileChunks: total, fileEnc: enc });
     }
 
     async function downloadProjectFile(id) {
@@ -1065,10 +1069,17 @@
       if (!p || !p.fileName) return;
       try {
         const snap = await userRef().collection('projects').doc(id).collection('files').orderBy('i').get();
-        const bin = atob(snap.docs.map(d => d.data().data).join(''));
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        const url = URL.createObjectURL(new Blob([bytes]));
+        let blob;
+        if (p.fileEnc) {
+          blob = new Blob(snap.docs.map(d => d.data().b.toUint8Array()));
+          if (p.fileEnc === 'gzip') blob = await new Response(blob.stream().pipeThrough(new DecompressionStream('gzip'))).blob();
+        } else { // arquivos enviados na versão anterior (texto base64)
+          const bin = atob(snap.docs.map(d => d.data().data).join(''));
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          blob = new Blob([bytes]);
+        }
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url; a.download = p.fileName;
         document.body.appendChild(a); a.click(); a.remove();
