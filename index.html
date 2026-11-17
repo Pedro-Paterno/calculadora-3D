@@ -83,6 +83,7 @@
         <button id="tab-btn-printers" onclick="switchTab('printers')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap"><i class="fa-solid fa-print"></i> Impressoras</button>
         <button id="tab-btn-projects" onclick="switchTab('projects')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap"><i class="fa-solid fa-folder-open"></i> Meus Projetos</button>
         <button id="tab-btn-clients" onclick="switchTab('clients')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap"><i class="fa-solid fa-users"></i> Clientes</button>
+        <button id="tab-btn-wholesale" onclick="switchTab('wholesale')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap"><i class="fa-solid fa-store"></i> Atacado / Lojas</button>
         <button id="tab-btn-config" onclick="switchTab('config')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap"><i class="fa-solid fa-bolt"></i> Energia & Ajustes</button>
       </nav>
 
@@ -97,7 +98,7 @@
               <input type="text" id="calc-project-name" placeholder="Ex: Suporte de Headset Kobra" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-cyan-500">
             </div>
             <div>
-              <label class="block text-xs font-medium text-slate-400 mb-1">Selecionar Filamento</label>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Filamento / cor 1</label>
               <select id="calc-filament-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-cyan-500">
                 <option value="">Carregando filamentos...</option>
               </select>
@@ -109,12 +110,13 @@
               </select>
             </div>
             <div>
-              <label class="block text-xs font-medium text-slate-400 mb-1">Peso TOTAL da impressão (g, todas as peças juntas)</label>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Peso do filamento / cor 1 (g, todas as peças juntas)</label>
               <input type="number" id="calc-weight" placeholder="Ex: 120" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
             </div>
             <div>
               <label class="block text-xs font-medium text-slate-400 mb-1">Tempo TOTAL da impressão (Ex: 12:30 = 12h e meia)</label>
-              <input type="text" id="calc-hours" placeholder="Ex: 12:30 ou 4:15" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+              <input type="text" id="calc-hours" placeholder="Ex: 12:30 ou 4:15" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></div>
+<div class="md:col-span-2 space-y-2"><label class="block text-xs font-medium text-slate-400 mb-1">Outras cores / filamentos usados na peça (opcional)</label><div id="extra-fil-rows" class="space-y-2"></div><div class="flex items-center gap-4"><button type="button" id="add-fil-btn" class="text-xs text-cyan-400 hover:text-cyan-300 font-bold"><i class="fa-solid fa-plus"></i> Adicionar outra cor</button><span id="total-weight" class="text-xs text-slate-300"></span></div>
             </div>
             <div>
               <label class="block text-xs font-medium text-slate-400 mb-1">Custos Extras / Licença STL (R$)</label>
@@ -243,6 +245,28 @@
           <p id="ord-hint" class="text-xs text-slate-400"></p>
         </div>
         <div id="clients-list" class="space-y-3"><p class="text-xs text-slate-500">Nenhum cliente cadastrado ainda.</p></div>
+      </div>
+
+      <!-- ATACADO / LOJAS -->
+      <div id="tab-wholesale" class="tab-content hidden space-y-6">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+          <h3 class="font-bold text-white text-base"><i class="fa-solid fa-store text-cyan-400"></i> Preço para Lojas (Atacado / Consignação)</h3>
+          <p class="text-xs text-slate-400">Usa o custo real do projeto e aplica uma margem menor. Se a loja fica com uma comissão (consignação), o site calcula o preço de vitrine para você receber o que quer.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="md:col-span-2"><label class="block text-xs font-medium text-slate-400 mb-1">Projeto</label><select id="wh-project" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></select></div>
+            <div id="wh-preview" class="md:col-span-2"></div>
+            <div><label class="block text-xs font-medium text-slate-400 mb-1">Quantidade de peças do lote</label><input type="number" id="wh-qty" value="10" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></div>
+            <div><label class="block text-xs font-medium text-slate-400 mb-1">Margem de lucro no atacado (%)</label><input type="number" id="wh-margin" value="30" step="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></div>
+            <div><label class="block text-xs font-medium text-slate-400 mb-1">Comissão da loja - consignação (%). 0 = você vende direto para a loja</label><input type="number" id="wh-comm" value="0" step="1" min="0" max="80" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></div>
+            <div><label class="block text-xs font-medium text-slate-400 mb-1">Embalagem extra por peça (R$)</label><input type="number" id="wh-pack" value="0" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></div>
+            <div><label class="block text-xs font-medium text-slate-400 mb-1">Frete do lote (R$)</label><input type="number" id="wh-ship" value="0" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></div>
+          </div>
+          <div id="wh-result" class="space-y-3"></div>
+          <div id="wh-actions" class="hidden flex flex-wrap gap-3">
+            <button id="wh-save" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-colors"><i class="fa-solid fa-cloud-arrow-up"></i> Salvar como preço de atacado do projeto</button>
+            <button id="wh-copy" class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-2.5 px-4 rounded-xl text-xs transition-colors"><i class="fa-brands fa-whatsapp"></i> Copiar orçamento para a loja</button>
+          </div>
+        </div>
       </div>
 
       <!-- ENERGIA -->
@@ -396,6 +420,7 @@
         allProjects = projects;
         renderProjects();
         renderClients();
+        renderWholesaleSelect();
       }, onErr));
 
       unsubscribers.push(base.collection('clients').onSnapshot(snap => {
@@ -460,6 +485,7 @@
       container.innerHTML = html;
       select.innerHTML += options;
       if (previous) select.value = previous; // mantém a seleção quando a lista atualiza
+      refreshExtraSelects();
     }
 
     // ---------- IMPRESSORAS ----------
@@ -529,9 +555,11 @@
 
     $('calculate-btn').addEventListener('click', () => {
       const projectName = $('calc-project-name').value.trim() || 'Peça Sem Nome';
-      const costPerGram = parseFloat($('calc-filament-select').value) || 0;
-      const printerVal = $('calc-printer-select').value;
-      const weight = parseFloat($('calc-weight').value) || 0;
+            const printerVal = $('calc-printer-select').value;
+      const fils = readFilaments();
+      if (fils.some(f => f.grams > 0 && !f.cpg)) { alert('Escolha o filamento de cada cor que tem peso.'); return; }
+      const weight = fils.reduce((a, f) => a + f.grams, 0);
+      const filBase = fils.reduce((a, f) => a + f.grams * f.cpg, 0);
       const hours = parseHours($('calc-hours').value);
       const extras = parseFloat($('calc-extras').value) || 0;
       const profitMargin = parseFloat($('calc-profit').value) || 0;
@@ -556,7 +584,7 @@
 
       // Peso e tempo são da impressão inteira; falhas aumentam esses custos
       const k = 1 + fail / 100;
-      const filCost = costPerGram * weight * k;
+      const filCost = filBase * k;
       const energyCost = ((watts * hours) / 1000) * kwhRate * k;
       const wearCost = hours * wearRate * k;
       nozzleCostTotal *= k;
@@ -580,6 +608,7 @@
         filamentId: $('calc-filament-select').selectedOptions[0]?.dataset.id || '',
         printerId: $('calc-printer-select').selectedOptions[0]?.dataset.id || '',
         image: currentImage,
+        filaments: fils,
         weight, hours,
         hoursFormatted: `${wholeHours}h ${minutes}m`,
         filCost, energyCost, wearCost, nozzleCostTotal, extras, batchCost, totalCost,
@@ -652,6 +681,7 @@
 
         $('calc-project-name').value = '';
         $('calc-weight').value = '';
+        clearExtraRows();
         $('calc-hours').value = '';
         $('calc-extras').value = '0';
         $('calc-category').value = ''; $('calc-pack').value = '0'; $('calc-labor').value = '0';
@@ -686,7 +716,7 @@
       const sel = $(selId);
       sel.value = '';
       const opt = [...sel.options].find(o => id && o.dataset.id === id);
-      if (opt) sel.value = opt.value;
+      if (opt) sel.selectedIndex = [...sel.options].indexOf(opt);
     }
 
     function editProject(id) {
@@ -698,7 +728,11 @@
       const mins = Math.round(num(p.hours) * 60);
       $('calc-project-name').value = p.projectName || '';
       $('calc-category').value = p.category || '';
-      $('calc-weight').value = num(p.weight) || '';
+      const fl = Array.isArray(p.filaments) && p.filaments.length ? p.filaments : null;
+      $('calc-weight').value = fl ? (fl[0].grams || '') : (num(p.weight) || '');
+      clearExtraRows();
+      if (fl) fl.slice(1).forEach(f => addFilRow(f.id, f.grams));
+      updateTotalWeight();
       $('calc-hours').value = `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, '0')}`;
       $('calc-extras').value = num(p.extras);
       $('calc-profit').value = p.margin ?? 100;
@@ -709,7 +743,7 @@
       $('calc-ship').value = num(p.shipping);
       $('calc-tax').value = num(p.tax);
       $('calc-sell').value = num(p.sellPrice) || '';
-      selectById('calc-filament-select', p.filamentId);
+      selectById('calc-filament-select', fl ? fl[0].id : p.filamentId);
       selectById('calc-printer-select', p.printerId);
       $('edit-name').textContent = p.projectName || '';
       $('save-label').textContent = 'Atualizar Projeto';
@@ -736,6 +770,117 @@
       const txt = `Orçamento: ${p.projectName}\n${q > 1 ? 'Quantidade: ' + q + ' un.\nValor por peça: ' : 'Valor: '}R$ ${pv.toFixed(2)}${q > 1 ? '\nTotal: R$ ' + (pv * q).toFixed(2) : ''}`;
       navigator.clipboard.writeText(txt).then(() => alert('Orçamento copiado! Cole no WhatsApp.'), () => prompt('Copie o orçamento:', txt));
     }
+
+    // ===== Vários filamentos (cores) na mesma peça =====
+    function readFilaments() {
+      const s1 = $('calc-filament-select');
+      const out = [{ id: s1.selectedOptions[0]?.dataset.id || '', grams: parseFloat($('calc-weight').value) || 0, cpg: parseFloat(s1.value) || 0 }];
+      document.querySelectorAll('#extra-fil-rows .fil-row').forEach(r => {
+        const sel = r.querySelector('.fil-select');
+        out.push({ id: sel.selectedOptions[0]?.dataset.id || '', grams: parseFloat(r.querySelector('.fil-grams').value) || 0, cpg: parseFloat(sel.value) || 0 });
+      });
+      return out;
+    }
+    function updateTotalWeight() {
+      const total = readFilaments().reduce((a, f) => a + f.grams, 0);
+      const n = document.querySelectorAll('#extra-fil-rows .fil-row').length;
+      $('total-weight').textContent = n && total ? `Peso total: ${total.toFixed(1)} g` : '';
+    }
+    function addFilRow(id = '', grams = '') {
+      const row = document.createElement('div');
+      row.className = 'fil-row grid grid-cols-6 gap-2 items-center';
+      row.innerHTML = `<select class="fil-select col-span-3 bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">${$('calc-filament-select').innerHTML}</select>
+        <input type="number" class="fil-grams col-span-2 bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white" placeholder="Gramas" min="0" step="0.1" value="${grams}">
+        <button type="button" class="text-red-400 hover:text-red-300 text-sm" title="Remover"><i class="fa-solid fa-trash"></i></button>`;
+      row.querySelector('button').addEventListener('click', () => { row.remove(); updateTotalWeight(); });
+      $('extra-fil-rows').appendChild(row);
+      const sel = row.querySelector('.fil-select');
+      const o = id ? [...sel.options].find(x => x.dataset.id === id) : null;
+      if (o) sel.selectedIndex = [...sel.options].indexOf(o);
+      updateTotalWeight();
+    }
+    function clearExtraRows() { $('extra-fil-rows').innerHTML = ''; updateTotalWeight(); }
+    function refreshExtraSelects() {
+      document.querySelectorAll('#extra-fil-rows .fil-select').forEach(sel => {
+        const prevId = sel.selectedOptions[0]?.dataset.id;
+        sel.innerHTML = $('calc-filament-select').innerHTML;
+        const o = prevId ? [...sel.options].find(x => x.dataset.id === prevId) : null;
+        if (o) sel.selectedIndex = [...sel.options].indexOf(o);
+      });
+    }
+    $('add-fil-btn').addEventListener('click', () => addFilRow());
+    $('calc-weight').addEventListener('input', updateTotalWeight);
+    $('extra-fil-rows').addEventListener('input', updateTotalWeight);
+
+    // ===== Atacado / Lojas =====
+    let whCalc = null;
+    function renderWholesaleSelect() {
+      const sel = $('wh-project');
+      const cur = sel.value;
+      const groups = {};
+      allProjects.forEach(p => { const c = p.category || 'Sem categoria'; (groups[c] = groups[c] || []).push(p); });
+      sel.innerHTML = '<option value="">Escolha o projeto</option>' + Object.keys(groups).sort().map(c =>
+        `<optgroup label="${esc(c)}">${groups[c].map(p => `<option value="${esc(p.id)}">${esc(p.projectName)}</option>`).join('')}</optgroup>`).join('');
+      sel.value = allProjects.some(p => p.id === cur) ? cur : '';
+      calcWholesale();
+    }
+
+    function calcWholesale() {
+      const pr = allProjects.find(x => x.id === $('wh-project').value);
+      const box = $('wh-result'), prev = $('wh-preview');
+      if (!pr) { box.innerHTML = ''; prev.innerHTML = ''; $('wh-actions').classList.add('hidden'); whCalc = null; return; }
+      const f = (v) => `R$ ${num(v).toFixed(2)}`;
+      const qty = Math.max(1, parseInt($('wh-qty').value) || 1);
+      const margin = parseFloat($('wh-margin').value) || 0;
+      const comm = Math.min(80, Math.max(0, parseFloat($('wh-comm').value) || 0));
+      const pack = parseFloat($('wh-pack').value) || 0;
+      const ship = parseFloat($('wh-ship').value) || 0;
+      const t = num(pr.tax) / 100;
+      const retail = num(pr.sellPrice) || num(pr.priceDirect);
+      const img = (pr.image || '').startsWith('data:image/') ? `<img src="${pr.image}" alt="" class="w-16 h-16 object-cover rounded-xl border border-slate-700">` : '';
+      prev.innerHTML = `<div class="flex items-center gap-3 bg-slate-900 p-3 rounded-xl border border-slate-700">${img}<div class="text-xs"><b class="text-cyan-400 text-sm">${esc(pr.projectName)}</b><br><span class="text-slate-400">Custo por peça: ${f(pr.totalCost)} · Seu preço de varejo: ${f(retail)}</span></div></div>`;
+      const den = 1 - t - comm / 100;
+      if (den <= 0.05) { box.innerHTML = '<p class="text-xs text-red-400">Imposto + comissão altos demais para calcular.</p>'; $('wh-actions').classList.add('hidden'); whCalc = null; return; }
+      const unit = num(pr.totalCost) + pack + ship / qty;
+      const net = unit * (1 + margin / 100);
+      const price = net / den;
+      const minP = unit / den;
+      const profit = net - unit;
+      const off = retail > 0 ? (1 - price / retail) * 100 : 0;
+      whCalc = { pr, qty, margin, comm, price, total: price * qty, unit };
+      const tile = (t1, v, c) => `<div class="bg-slate-900 p-3 rounded-xl border border-slate-700 text-center"><span class="text-[10px] text-slate-400 block uppercase">${t1}</span><span class="font-bold text-sm ${c}">${v}</span></div>`;
+      let warn = '';
+      if (margin <= 0) warn += '<p class="text-xs text-red-400 font-semibold">⚠ Margem zero ou negativa: você não tem lucro (ou tem prejuízo) nesse preço.</p>';
+      if (retail > 0 && price >= retail) warn += '<p class="text-xs text-amber-400">O preço de atacado ficou igual ou maior que o seu preço de varejo. Reduza a margem ou a comissão.</p>';
+      box.innerHTML = `
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+          ${tile('Custo por peça', f(unit), 'text-amber-400')}
+          ${tile(comm > 0 ? 'Preço de vitrine' : 'Preço por peça', f(price), 'text-cyan-400')}
+          ${tile('Total do lote', f(price * qty), 'text-emerald-400')}
+          ${tile('Lucro por peça', f(profit), profit < 0 ? 'text-red-400' : 'text-emerald-400')}
+          ${tile('Lucro do lote', f(profit * qty), profit < 0 ? 'text-red-400' : 'text-emerald-400')}
+        </div>
+        <p class="text-xs text-slate-300">${comm > 0 ? `A loja fica com ${comm}% (${f(price * comm / 100)} por peça) e você recebe ${f(price * (1 - comm / 100 - t))} por peça${t ? ' depois do imposto' : ''}.` : 'Venda direta para a loja.'}
+          ${retail > 0 ? ` Fica ${off >= 0 ? off.toFixed(0) + '% mais barato' : Math.abs(off).toFixed(0) + '% mais caro'} que o seu preço de varejo (${f(retail)}).` : ''}</p>
+        <p class="text-xs text-rose-300">Preço mínimo por peça, sem prejuízo: ${f(minP)}</p>${warn}`;
+      $('wh-actions').classList.remove('hidden');
+    }
+    ['wh-project', 'wh-qty', 'wh-margin', 'wh-comm', 'wh-pack', 'wh-ship'].forEach(id => $(id).addEventListener('input', calcWholesale));
+    $('wh-project').addEventListener('change', calcWholesale);
+
+    $('wh-save').addEventListener('click', async () => {
+      if (!whCalc) return;
+      try {
+        await userRef().collection('projects').doc(whCalc.pr.id).update({ wholesalePrice: Math.round(whCalc.price * 100) / 100, wholesaleMargin: whCalc.margin, wholesaleComm: whCalc.comm });
+        clearError();
+        alert('Preço de atacado salvo no projeto!');
+      } catch (e) { showError(e, 'Erro ao salvar preço de atacado'); }
+    });
+    $('wh-copy').addEventListener('click', () => {
+      if (!whCalc) return;
+      const txt = `Orçamento (atacado): ${whCalc.pr.projectName}\nQuantidade: ${whCalc.qty} un.\nValor por peça: R$ ${whCalc.price.toFixed(2)}\nTotal: R$ ${whCalc.total.toFixed(2)}`;
+      navigator.clipboard.writeText(txt).then(() => alert('Orçamento copiado! Cole no WhatsApp.'), () => prompt('Copie o orçamento:', txt));
+    });
 
     let allClients = [];
     let allOrders = [];
@@ -1176,12 +1321,14 @@
             ${cell('Extras / licença', p.extras)}${cell('Frete', p.shipping)}${cell('Embalagem', num(p.pack) * q)}
             ${cell('Mão de obra', num(p.labor) * q)}${cell('Custo total do pedido', batch, 'text-amber-400')}
           </div>
+          ${p.filaments && p.filaments.length > 1 ? `<p class="text-[11px] text-slate-400">Cores: ${p.filaments.map(f => { const x = localFilaments.find(y => y.id === f.id); return esc(x ? x.name : 'filamento') + ' ' + num(f.grams) + 'g'; }).join(' + ')}</p>` : ''}
           <p class="text-[11px] text-slate-400">${q} un. · Custo por peça: <b class="text-amber-400">R$ ${num(p.totalCost).toFixed(2)}</b> · Falhas (${num(p.fail)}%) já incluídas: R$ ${failCost.toFixed(2)} · Margem: ${p.margin ?? '-'}%${num(p.tax) ? ' · Imposto/taxa: ' + num(p.tax) + '%' : ''}</p>
           <p class="text-[11px] text-slate-300">Lucro por peça (Pix): <b class="text-emerald-400">R$ ${lucro.toFixed(2)}</b> · Pedido de ${q} un.: faturamento R$ ${(num(p.priceDirect) * q).toFixed(2)}, lucro <b class="text-emerald-400">R$ ${(lucro * q).toFixed(2)}</b></p>
           <p class="text-[11px] text-slate-300"><i class="fa-solid fa-bag-shopping text-cyan-400"></i> Vendidos: <b class="text-emerald-400">${sUn} un.</b> (R$ ${sRev.toFixed(2)}) · Em produção: <b class="text-amber-400">${pUn} un.</b></p>
           ${p.minDirect ? `<p class="text-[11px] text-rose-300">Preço mínimo por peça, sem prejuízo: Pix R$ ${num(p.minDirect).toFixed(2)} · Mercado Livre R$ ${num(p.minML).toFixed(2)} · Shopee R$ ${num(p.minShopee).toFixed(2)}</p>` : ''}
           <div class="flex flex-wrap gap-3 text-xs">
             ${p.sellPrice ? `<span class="text-cyan-300 font-bold">Meu preço: R$ ${num(p.sellPrice).toFixed(2)} (lucro R$ ${(num(p.sellPrice) * (1 - num(p.tax) / 100) - num(p.totalCost)).toFixed(2)})</span>` : ''}
+            ${p.wholesalePrice ? `<span class="text-violet-300 font-bold">Atacado: R$ ${num(p.wholesalePrice).toFixed(2)}</span>` : ''}
             <span class="text-emerald-400 font-bold">Pix sugerido: R$ ${num(p.priceDirect).toFixed(2)}</span>
             <span class="text-yellow-400 font-bold">Mercado Livre: R$ ${num(p.priceML).toFixed(2)}</span>
             <span class="text-orange-400 font-bold">Shopee: R$ ${num(p.priceShopee).toFixed(2)}</span>
