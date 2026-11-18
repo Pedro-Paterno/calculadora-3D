@@ -7,6 +7,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -230,6 +232,7 @@
         </div>
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
           <h3 class="font-bold text-white text-base"><i class="fa-solid fa-bag-shopping text-cyan-400"></i> Novo Pedido de Encomenda</h3>
+          <div id="ord-edit-banner" class="hidden p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 flex justify-between items-center gap-2"><span>Editando um pedido. Altere o que precisar e clique em Atualizar Pedido.</span><button type="button" onclick="cancelOrderEdit()" class="underline whitespace-nowrap">Cancelar edição</button></div>
           <form id="form-add-order" class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <select id="ord-client" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></select>
             <div class="md:col-span-2 space-y-2">
@@ -239,10 +242,30 @@
             </div>
             <input type="number" id="ord-qty" value="1" min="1" placeholder="Quantidade" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
             <input type="number" id="ord-price" step="0.01" min="0" required placeholder="Valor cobrado por peça (R$)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            <input type="text" id="ord-color" list="color-list" placeholder="Cor que o cliente quer (ex: Vermelho)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"><datalist id="color-list"></datalist>
+            <textarea id="ord-notes" rows="2" placeholder="Descrição / personalização (ex: nome 'Maria', tamanho 20cm, embalagem de presente)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></textarea>
             <select id="ord-status" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"><option value="producao">Em produção</option><option value="vendido">Vendido / entregue</option></select>
-            <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm transition-colors">Salvar Pedido</button>
+            <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm transition-colors"><span id="ord-submit-label">Salvar Pedido</span></button>
           </form>
           <p id="ord-hint" class="text-xs text-slate-400"></p>
+        </div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+          <h3 class="font-bold text-white text-base"><i class="fa-solid fa-list-ol text-amber-400"></i> Fila de Produção</h3>
+          <p class="text-xs text-slate-400">Pedidos em produção na ordem em que foram feitos: quem pediu primeiro está no topo. Ao terminar e entregar, clique em Concluir.</p>
+          <div id="queue-list" class="space-y-2"></div>
+        </div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+          <h3 class="font-bold text-white text-base"><i class="fa-solid fa-file-pdf text-cyan-400"></i> Relatório em PDF</h3>
+          <p class="text-xs text-slate-400">Gera um PDF detalhado com resumo, pedidos em produção (com quadradinho para marcar), pedidos vendidos, totais por cliente e por projeto. Pronto para imprimir e guardar.</p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <select id="rep-type" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+              <option value="all">Completo (produção + vendidos)</option>
+              <option value="producao">Só pedidos em produção</option>
+              <option value="vendido">Só pedidos vendidos</option>
+            </select>
+            <select id="rep-client" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></select>
+            <button id="rep-btn" type="button" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-colors"><i class="fa-solid fa-download"></i> Gerar PDF</button>
+          </div>
         </div>
         <div id="clients-list" class="space-y-3"><p class="text-xs text-slate-500">Nenhum cliente cadastrado ainda.</p></div>
       </div>
@@ -486,6 +509,7 @@
       select.innerHTML += options;
       if (previous) select.value = previous; // mantém a seleção quando a lista atualiza
       refreshExtraSelects();
+      fillColorList();
     }
 
     // ---------- IMPRESSORAS ----------
@@ -918,19 +942,23 @@
     $('form-add-order').addEventListener('submit', async (e) => {
       e.preventDefault();
       const cl = allClients.find(c => c.id === $('ord-client').value);
-      const pr = allProjects.find(x => x.id === $('ord-project').value);
+      let pr = allProjects.find(x => x.id === $('ord-project').value);
+      if (!pr && editingOrderId) { const o0 = allOrders.find(x => x.id === editingOrderId); if (o0) pr = { id: o0.projectId, projectName: o0.projectName }; }
       if (!cl) { alert('Escolha o cliente.'); return; }
       if (!pr) { alert('Escolha a categoria e clique no projeto desejado.'); return; }
       try {
-        await userRef().collection('orders').add({
+        const data = {
           clientId: cl.id, clientName: cl.name, projectId: pr.id, projectName: pr.projectName,
           qty: Math.max(1, parseInt($('ord-qty').value) || 1),
           unitPrice: parseFloat($('ord-price').value) || 0,
           status: $('ord-status').value,
-          date: new Date().toLocaleDateString('pt-BR'), timestamp: Date.now()
-        });
+          color: $('ord-color').value.trim(),
+          notes: $('ord-notes').value.trim()
+        };
+        if (editingOrderId) await userRef().collection('orders').doc(editingOrderId).update(data);
+        else await userRef().collection('orders').add({ ...data, date: new Date().toLocaleDateString('pt-BR'), timestamp: Date.now() });
         $('ord-qty').value = '1'; $('ord-price').value = ''; $('ord-hint').textContent = '';
-        $('ord-project').value = ''; renderOrderPicker();
+        $('ord-project').value = ''; $('ord-color').value = ''; $('ord-notes').value = ''; endOrderEdit(); renderOrderPicker();
         clearError();
       } catch (err) { showError(err, 'Erro ao salvar pedido'); }
     });
@@ -948,6 +976,200 @@
         batch.delete(userRef().collection('clients').doc(id));
         await batch.commit();
       } catch (e) { showError(e, 'Erro ao excluir cliente'); }
+    }
+
+    const R = (v) => 'R$ ' + num(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    function generateReportPDF() {
+      if (!window.jspdf || !window.jspdf.jsPDF) { alert('A biblioteca de PDF não carregou. Confira a internet e recarregue a página (Ctrl + F5).'); return; }
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+        const type = $('rep-type').value, cid = $('rep-client').value;
+        const client = allClients.find(c => c.id === cid);
+        const orders = allOrders.filter(o => !cid || o.clientId === cid);
+        const prod = orders.filter(o => o.status !== 'vendido').sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); // fila: quem pediu primeiro
+        const sold = orders.filter(o => o.status === 'vendido');
+
+        const info = (o) => {
+          const pr = allProjects.find(x => x.id === o.projectId);
+          const q = num(o.qty), total = q * num(o.unitPrice);
+          const tax = pr ? total * num(pr.tax) / 100 : 0;
+          const cost = pr ? q * num(pr.totalCost) : 0;
+          const guard = cost + tax;           // guardar: custos + impostos
+          const livre = total - guard;        // livre: o que sobra
+          const img = pr && (pr.image || '').startsWith('data:image/') ? pr.image : null;
+          return { pr, q, total, tax, cost, guard, livre, img };
+        };
+        const sumOf = (list, k) => list.reduce((a, o) => a + (info(o)[k] || 0), 0);
+        const fin = (list) => { const k = list.filter(o => info(o).pr); return { rev: sumOf(k, 'total'), tax: sumOf(k, 'tax'), cost: sumOf(k, 'cost'), guard: sumOf(k, 'guard'), livre: sumOf(k, 'livre'), excl: list.length - k.length }; };
+
+        const typeLabel = { all: 'Completo', producao: 'Somente em produção', vendido: 'Somente vendidos' }[type];
+        let y = 16;
+        doc.setFontSize(18); doc.setTextColor(8, 145, 178); doc.text('PrintCost 3D', 15, y);
+        doc.setFontSize(13); doc.setTextColor(30); doc.text('Relatório de Pedidos e Vendas', 15, y + 8);
+        doc.setFontSize(9); doc.setTextColor(100);
+        doc.text(`Gerado em ${new Date().toLocaleString('pt-BR')}  |  Cliente: ${client ? client.name : 'Todos'}  |  Conteúdo: ${typeLabel}`, 15, y + 14);
+        y += 20;
+
+        const common = { margin: { left: 15, right: 15, bottom: 16 }, styles: { fontSize: 8, cellPadding: 2, valign: 'middle', overflow: 'linebreak' } };
+        const soldQty = sumOf(sold, 'q'), prodQty = sumOf(prod, 'q');
+
+        doc.setFontSize(12); doc.setTextColor(30); doc.text('Resumo', 15, y);
+        doc.autoTable({
+          ...common, startY: y + 2, theme: 'grid',
+          body: [
+            ['Total de pedidos', String(orders.length), 'Clientes com pedidos', String(new Set(orders.map(o => o.clientId)).size)],
+            ['Peças vendidas', `${soldQty} un.`, 'Peças em produção', `${prodQty} un.`]
+          ],
+          columnStyles: { 0: { fontStyle: 'bold', cellWidth: 65 }, 1: { cellWidth: 60 }, 2: { fontStyle: 'bold', cellWidth: 70 }, 3: { cellWidth: 60 } }
+        });
+        y = doc.lastAutoTable.finalY + 9;
+
+        // Quanto guardar e quanto fica livre
+        const fs = fin(sold), fp = fin(prod);
+        const tot = { rev: fs.rev + fp.rev, tax: fs.tax + fp.tax, cost: fs.cost + fp.cost, guard: fs.guard + fp.guard, livre: fs.livre + fp.livre };
+        const finRow = (label, f) => [label, R(f.rev), R(f.tax), R(f.cost), R(f.guard), R(f.livre)];
+        if (y > H - 60) { doc.addPage(); y = 18; }
+        doc.setFontSize(12); doc.setTextColor(30); doc.text('Quanto guardar e quanto fica livre', 15, y);
+        doc.autoTable({
+          ...common, startY: y + 2, theme: 'grid',
+          head: [['', 'Faturamento', 'Impostos / taxas', 'Custos de produção', 'GUARDAR (custos + impostos)', 'VALOR LIVRE (lucro)']],
+          body: [finRow('Já vendidos', fs), finRow('Em produção (previsão a receber)', fp), finRow('Total (vendidos + produção)', tot)],
+          headStyles: { fillColor: [71, 85, 105] },
+          columnStyles: { 0: { fontStyle: 'bold', cellWidth: 62 }, 4: { fontStyle: 'bold', fillColor: [254, 243, 199] }, 5: { fontStyle: 'bold', fillColor: [209, 250, 229] } },
+          didParseCell: (d) => { if (d.section === 'body' && d.row.index === 2) d.cell.styles.fontStyle = 'bold'; }
+        });
+        y = doc.lastAutoTable.finalY + 4;
+        doc.setFontSize(8); doc.setTextColor(100);
+        const expl = doc.splitTextToSize('GUARDAR = o que foi gasto para fazer as peças (filamento, energia, desgaste da impressora e do bico, falhas, embalagem, mão de obra, frete) mais impostos/taxas. Separe esse valor para repor material e manter a impressora funcionando. VALOR LIVRE = o que sobra para você. Em produção é só previsão: entra no caixa quando o pedido for pago.' + ((fs.excl + fp.excl) ? ` (${fs.excl + fp.excl} pedido(s) de projetos excluídos ficam de fora desses valores.)` : ''), W - 30);
+        doc.text(expl, 15, y);
+        y += expl.length * 3.6 + 8;
+
+        const ordersTable = (title, list, isProd, color) => {
+          if (y > H - 50) { doc.addPage(); y = 18; }
+          doc.setFontSize(12); doc.setTextColor(...color); doc.text(`${title} (${list.length})`, 15, y);
+          if (!list.length) { doc.setFontSize(9); doc.setTextColor(100); doc.text('Nenhum pedido.', 15, y + 6); y += 14; return; }
+          let startY = y + 3;
+          if (isProd) {
+            doc.setFontSize(9); doc.setTextColor(30);
+            doc.text(`Próximo a imprimir: 1º ${list[0].clientName} - ${list[0].projectName} (${info(list[0]).q} un.). A fila segue a ordem em que os pedidos foram feitos.`, 15, y + 6);
+            startY = y + 9;
+          }
+          const imgs = [];
+          const body = list.map((o, idx) => {
+            const i = info(o);
+            imgs.push(i.img);
+            const proj = { content: o.projectName || '', styles: { cellPadding: { top: 2, right: 2, bottom: 2, left: 17 } } };
+            const vals = [R(o.unitPrice), R(i.total), i.pr ? R(i.guard) : '-', i.pr ? R(i.livre) : '-'];
+            return isProd
+              ? [`${idx + 1}º`, o.date || '', o.clientName || '', proj, o.color || '-', String(i.q), ...vals, o.notes || '-', '[    ]']
+              : [o.date || '', o.clientName || '', proj, o.color || '-', String(i.q), ...vals, o.notes || '-'];
+          });
+          const head = isProd
+            ? [['Ordem', 'Data', 'Cliente', 'Projeto', 'Cor', 'Qtd', 'Valor un.', 'Total', 'Guardar', 'Livre', 'Descrição / personalização', 'Feito']]
+            : [['Data', 'Cliente', 'Projeto', 'Cor', 'Qtd', 'Valor un.', 'Total', 'Guardar', 'Livre', 'Descrição / personalização']];
+          const imgCol = isProd ? 3 : 2;
+          doc.autoTable({
+            ...common, startY, head, body,
+            headStyles: { fillColor: color },
+            alternateRowStyles: { fillColor: [245, 247, 250] },
+            bodyStyles: { minCellHeight: 16 },
+            columnStyles: isProd
+              ? { 0: { cellWidth: 11, fontStyle: 'bold' }, 1: { cellWidth: 17 }, 2: { cellWidth: 26 }, 4: { cellWidth: 20 }, 5: { cellWidth: 9 }, 6: { cellWidth: 19 }, 7: { cellWidth: 20 }, 8: { cellWidth: 20 }, 9: { cellWidth: 20 }, 10: { cellWidth: 48 }, 11: { cellWidth: 13 } }
+              : { 0: { cellWidth: 17 }, 1: { cellWidth: 26 }, 3: { cellWidth: 20 }, 4: { cellWidth: 9 }, 5: { cellWidth: 19 }, 6: { cellWidth: 20 }, 7: { cellWidth: 20 }, 8: { cellWidth: 20 }, 9: { cellWidth: 55 } },
+            didDrawCell: (d) => {
+              if (d.section === 'body' && d.column.index === imgCol && imgs[d.row.index]) {
+                try { doc.addImage(imgs[d.row.index], 'JPEG', d.cell.x + 1, d.cell.y + 1, 13, 13); } catch (_) {}
+              }
+            }
+          });
+          const f = fin(list);
+          y = doc.lastAutoTable.finalY + 5;
+          doc.setFontSize(9); doc.setTextColor(30);
+          doc.text(`Total: ${sumOf(list, 'q')} un.  |  Faturamento ${R(sumOf(list, 'total'))}  |  Guardar ${R(f.guard)}  |  Livre ${R(f.livre)}`, 15, y);
+          y += 12;
+        };
+
+        if (type !== 'vendido') ordersTable('Fila de produção: pedidos em produção (quem pediu primeiro vem primeiro)', prod, true, [217, 119, 6]);
+        if (type !== 'producao') ordersTable('Pedidos vendidos / entregues', sold, false, [5, 150, 105]);
+
+        const small = (title, head, body) => {
+          if (!body.length) return;
+          if (y > H - 45) { doc.addPage(); y = 18; }
+          doc.setFontSize(12); doc.setTextColor(30); doc.text(title, 15, y);
+          doc.autoTable({ ...common, startY: y + 3, head: [head], body, headStyles: { fillColor: [71, 85, 105] }, alternateRowStyles: { fillColor: [245, 247, 250] } });
+          y = doc.lastAutoTable.finalY + 10;
+        };
+
+        if (!cid) {
+          small('Resumo por cliente', ['Cliente', 'Telefone', 'Pedidos', 'Vendido', 'Em produção'],
+            allClients.map(c => {
+              const os = orders.filter(o => o.clientId === c.id);
+              if (!os.length) return null;
+              return [c.name, c.phone || '-', String(os.length), R(sumOf(os.filter(o => o.status === 'vendido'), 'total')), R(sumOf(os.filter(o => o.status !== 'vendido'), 'total'))];
+            }).filter(Boolean));
+        }
+
+        const projIds = [...new Set(orders.map(o => o.projectId))];
+        small('Resumo por projeto', ['Projeto', 'Categoria', 'Vendidos (un.)', 'Em produção (un.)', 'Faturado'],
+          projIds.map(id => {
+            const os = orders.filter(o => o.projectId === id);
+            const pr = allProjects.find(x => x.id === id);
+            const so = os.filter(o => o.status === 'vendido');
+            return [os[0].projectName, pr ? (pr.category || 'Sem categoria') : '-', String(sumOf(so, 'q')), String(sumOf(os.filter(o => o.status !== 'vendido'), 'q')), R(sumOf(so, 'total'))];
+          }));
+
+        const pages = doc.getNumberOfPages();
+        for (let i = 1; i <= pages; i++) {
+          doc.setPage(i); doc.setFontSize(8); doc.setTextColor(120);
+          doc.text('PrintCost 3D', 15, H - 7);
+          doc.text(`Página ${i} de ${pages}`, W - 15, H - 7, { align: 'right' });
+        }
+        doc.save(`relatorio-printcost-${new Date().toISOString().slice(0, 10)}.pdf`);
+      } catch (e) { showError(e, 'Erro ao gerar o PDF'); }
+    }
+    $('rep-btn').addEventListener('click', generateReportPDF);
+
+    let editingOrderId = null;
+
+    function fillColorList() {
+      $('color-list').innerHTML = localFilaments.map(f => `<option value="${esc(f.name)}">`).join('');
+    }
+
+    function endOrderEdit() {
+      editingOrderId = null;
+      $('ord-edit-banner').classList.add('hidden');
+      $('ord-submit-label').textContent = 'Salvar Pedido';
+    }
+
+    function cancelOrderEdit() {
+      endOrderEdit();
+      ['ord-project', 'ord-price', 'ord-color', 'ord-notes'].forEach(id => { $(id).value = ''; });
+      $('ord-qty').value = '1';
+      $('ord-hint').textContent = '';
+      renderOrderPicker();
+    }
+
+    function editOrder(id) {
+      const o = allOrders.find(x => x.id === id);
+      if (!o) return;
+      editingOrderId = id;
+      $('ord-client').value = o.clientId;
+      const pr = allProjects.find(x => x.id === o.projectId);
+      $('ord-project').value = pr ? pr.id : '';
+      if (pr) $('ord-category').value = pr.category || 'Sem categoria';
+      renderOrderPicker();
+      $('ord-qty').value = num(o.qty) || 1;
+      $('ord-price').value = num(o.unitPrice).toFixed(2);
+      $('ord-status').value = o.status || 'producao';
+      $('ord-color').value = o.color || '';
+      $('ord-notes').value = o.notes || '';
+      updateOrderHint();
+      $('ord-edit-banner').classList.remove('hidden');
+      $('ord-submit-label').textContent = 'Atualizar Pedido';
+      $('form-add-order').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     function pickProject(id) {
@@ -975,11 +1197,44 @@
       }).join('') || '<p class="text-xs text-slate-500 col-span-full">Nenhum projeto nessa categoria.</p>';
     }
 
+    function queueOrders() {
+      return allOrders.filter(o => o.status !== 'vendido').sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+    }
+
+    function renderQueue() {
+      const list = queueOrders();
+      const box = $('queue-list');
+      if (!list.length) { box.innerHTML = '<p class="text-xs text-slate-500">Nenhum pedido em produção.</p>'; return; }
+      box.innerHTML = list.map((o, i) => {
+        const pr = allProjects.find(x => x.id === o.projectId);
+        const thumb = (pr && (pr.image || '').startsWith('data:image/')) ? `<img src="${pr.image}" alt="" class="w-14 h-14 object-cover rounded-lg border border-slate-700 shrink-0">` : '';
+        return `
+        <div class="flex items-center gap-3 bg-slate-900 p-3 rounded-xl border ${i === 0 ? 'border-cyan-500/70' : 'border-slate-700'}">
+          <div class="w-8 h-8 shrink-0 rounded-full bg-cyan-500 text-slate-950 font-bold flex items-center justify-center text-sm">${i + 1}</div>
+          ${thumb}
+          <div class="flex-1 min-w-0 text-xs">
+            <b class="text-cyan-400 text-sm">${esc(o.projectName)}</b> <span class="text-slate-300">· ${num(o.qty)} un.</span><br>
+            <span class="text-slate-300">Cliente: <b>${esc(o.clientName)}</b> · pedido em ${esc(o.date)}</span>
+            ${o.color ? `<div class="text-violet-300"><i class="fa-solid fa-palette"></i> Cor: ${esc(o.color)}</div>` : ''}
+            ${o.notes ? `<div class="text-amber-300 whitespace-pre-line"><i class="fa-solid fa-note-sticky"></i> ${esc(o.notes)}</div>` : ''}
+          </div>
+          <button onclick="setOrderStatus('${esc(o.id)}', 'vendido')" class="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-lg text-xs">Concluir</button>
+        </div>`;
+      }).join('');
+    }
+
     function renderClients() {
+      renderQueue();
+      const qp = {};
+      queueOrders().forEach((o, i) => { qp[o.id] = i + 1; });
+      fillColorList();
       const cs = $('ord-client');
       const cv = cs.value;
       cs.innerHTML = '<option value="">Selecione o cliente</option>' + allClients.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
       cs.value = cv;
+      const rc = $('rep-client'), rv = rc.value;
+      rc.innerHTML = '<option value="">Todos os clientes</option>' + allClients.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+      rc.value = rv;
       renderOrderPicker();
 
       const box = $('clients-list');
@@ -1000,10 +1255,13 @@
               <span class="font-bold text-cyan-400">${esc(o.projectName)}</span><br>
               <span class="text-slate-300">${num(o.qty)} un. × ${money(o.unitPrice)} = <b>${money(num(o.qty) * num(o.unitPrice))}</b></span>
               ${lucro === null ? '' : ` · <span class="${lucro < 0 ? 'text-red-400' : 'text-emerald-400'}">lucro ${money(lucro)}</span>`}
-              <span class="text-slate-500">· ${esc(o.date)}</span>
+              <span class="text-slate-500">· ${esc(o.date)}</span>${qp[o.id] ? ` <span class="text-cyan-300 font-bold">· fila nº ${qp[o.id]}</span>` : ''}
+              ${o.color ? `<div class="text-violet-300 mt-1"><i class="fa-solid fa-palette"></i> Cor: ${esc(o.color)}</div>` : ''}
+              ${o.notes ? `<div class="text-amber-300 whitespace-pre-line mt-1"><i class="fa-solid fa-note-sticky"></i> ${esc(o.notes)}</div>` : ''}
             </div>
             <div class="flex items-center gap-2 ml-auto">
               <select onchange="setOrderStatus('${esc(o.id)}', this.value)" class="bg-slate-800 border border-slate-600 rounded-lg text-xs p-1.5 text-white">${opt('producao', 'Em produção')}${opt('vendido', 'Vendido / entregue')}</select>
+              <button onclick="editOrder('${esc(o.id)}')" class="text-amber-400 hover:text-amber-300 p-1" title="Editar pedido"><i class="fa-solid fa-pen"></i></button>
               <button onclick="deleteDoc('orders', '${esc(o.id)}')" class="text-red-400 hover:text-red-300 p-1"><i class="fa-solid fa-trash"></i></button>
             </div>
           </div>`;
