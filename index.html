@@ -1061,11 +1061,12 @@
           const body = list.map((o, idx) => {
             const i = info(o);
             imgs.push(i.img);
-            const proj = { content: o.projectName || '', styles: { cellPadding: { top: 2, right: 2, bottom: 2, left: 17 } } };
+            const cli = { content: o.clientName || '', styles: { fontStyle: 'bold', fontSize: 9 } };
+            const proj = { content: o.projectName || '', styles: { fontStyle: 'bold', cellPadding: { top: 2, right: 2, bottom: 2, left: 17 } } };
             const vals = [R(o.unitPrice), R(i.total), i.pr ? R(i.guard) : '-', i.pr ? R(i.livre) : '-'];
             return isProd
-              ? [`${idx + 1}º`, o.date || '', o.clientName || '', proj, o.color || '-', String(i.q), ...vals, o.notes || '-', '[    ]']
-              : [o.date || '', o.clientName || '', proj, o.color || '-', String(i.q), ...vals, o.notes || '-'];
+              ? [`${idx + 1}º`, o.date || '', cli, proj, o.color || '-', String(i.q), ...vals, o.notes || '-', '[    ]']
+              : [o.date || '', cli, proj, o.color || '-', String(i.q), ...vals, o.notes || '-'];
           });
           const head = isProd
             ? [['Ordem', 'Data', 'Cliente', 'Projeto', 'Cor', 'Qtd', 'Valor un.', 'Total', 'Guardar', 'Livre', 'Descrição / personalização', 'Feito']]
@@ -1207,16 +1208,22 @@
       if (!list.length) { box.innerHTML = '<p class="text-xs text-slate-500">Nenhum pedido em produção.</p>'; return; }
       box.innerHTML = list.map((o, i) => {
         const pr = allProjects.find(x => x.id === o.projectId);
-        const thumb = (pr && (pr.image || '').startsWith('data:image/')) ? `<img src="${pr.image}" alt="" class="w-14 h-14 object-cover rounded-lg border border-slate-700 shrink-0">` : '';
+        const cl = allClients.find(c => c.id === o.clientId);
+        const thumb = (pr && (pr.image || '').startsWith('data:image/'))
+          ? `<img src="${pr.image}" alt="" class="w-20 h-20 object-cover rounded-xl border border-slate-700 shrink-0">`
+          : `<div class="w-20 h-20 rounded-xl border border-dashed border-slate-700 flex items-center justify-center text-slate-600 shrink-0"><i class="fa-solid fa-image"></i></div>`;
         return `
-        <div class="flex items-center gap-3 bg-slate-900 p-3 rounded-xl border ${i === 0 ? 'border-cyan-500/70' : 'border-slate-700'}">
-          <div class="w-8 h-8 shrink-0 rounded-full bg-cyan-500 text-slate-950 font-bold flex items-center justify-center text-sm">${i + 1}</div>
+        <div class="flex flex-wrap items-center gap-3 bg-slate-900 p-3 rounded-xl border ${i === 0 ? 'border-cyan-500/70' : 'border-slate-700'}">
+          <div class="w-9 h-9 shrink-0 rounded-full bg-cyan-500 text-slate-950 font-bold flex items-center justify-center">${i + 1}</div>
           ${thumb}
-          <div class="flex-1 min-w-0 text-xs">
-            <b class="text-cyan-400 text-sm">${esc(o.projectName)}</b> <span class="text-slate-300">· ${num(o.qty)} un.</span><br>
-            <span class="text-slate-300">Cliente: <b>${esc(o.clientName)}</b> · pedido em ${esc(o.date)}</span>
-            ${o.color ? `<div class="text-violet-300"><i class="fa-solid fa-palette"></i> Cor: ${esc(o.color)}</div>` : ''}
-            ${o.notes ? `<div class="text-amber-300 whitespace-pre-line"><i class="fa-solid fa-note-sticky"></i> ${esc(o.notes)}</div>` : ''}
+          <div class="flex-1 min-w-[150px]">
+            <p class="text-[10px] uppercase tracking-wide text-slate-500">Cliente</p>
+            <p class="text-base font-bold text-white break-words"><i class="fa-solid fa-user text-slate-500 text-sm"></i> ${esc(o.clientName)}</p>
+            <p class="text-[10px] uppercase tracking-wide text-slate-500 mt-1">Peça a imprimir</p>
+            <p class="text-sm font-bold text-cyan-400 break-words">${esc(o.projectName)} <span class="text-slate-300 font-normal">- ${num(o.qty)} un.</span></p>
+            ${o.color ? `<p class="text-xs text-violet-300 mt-1"><i class="fa-solid fa-palette"></i> Cor: ${esc(o.color)}</p>` : ''}
+            ${o.notes ? `<p class="text-xs text-amber-300 whitespace-pre-line"><i class="fa-solid fa-note-sticky"></i> ${esc(o.notes)}</p>` : ''}
+            <p class="text-[11px] text-slate-500 mt-1">Pedido em ${esc(o.date)}${cl && cl.phone ? ` · ${esc(cl.phone)}` : ''}</p>
           </div>
           <button onclick="setOrderStatus('${esc(o.id)}', 'vendido')" class="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-lg text-xs">Concluir</button>
         </div>`;
