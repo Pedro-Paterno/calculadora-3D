@@ -84,6 +84,7 @@
         <button id="tab-btn-filaments" onclick="switchTab('filaments')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap"><i class="fa-solid fa-spool"></i> Filamentos</button>
         <button id="tab-btn-printers" onclick="switchTab('printers')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap"><i class="fa-solid fa-print"></i> Impressoras</button>
         <button id="tab-btn-projects" onclick="switchTab('projects')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap"><i class="fa-solid fa-folder-open"></i> Meus Projetos</button>
+        <button id="tab-btn-stock" onclick="switchTab('stock')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap"><i class="fa-solid fa-boxes-stacked"></i> Estoque</button>
         <button id="tab-btn-clients" onclick="switchTab('clients')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap"><i class="fa-solid fa-users"></i> Clientes</button>
         <button id="tab-btn-wholesale" onclick="switchTab('wholesale')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap"><i class="fa-solid fa-store"></i> Atacado / Lojas</button>
         <button id="tab-btn-config" onclick="switchTab('config')" class="tab-btn text-slate-400 hover:text-white px-4 py-2 flex items-center gap-2 whitespace-nowrap"><i class="fa-solid fa-bolt"></i> Energia & Ajustes</button>
@@ -214,9 +215,30 @@
       <div id="tab-projects" class="tab-content hidden space-y-6">
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
           <h3 class="font-bold text-white text-base"><i class="fa-solid fa-folder-open text-cyan-400"></i> Projetos e Orçamentos Salvos</h3>
-          <div id="proj-summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center"></div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-3"><input id="proj-search" oninput="renderProjects()" placeholder="Buscar por peça ou categoria" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"><select id="proj-filter" onchange="renderProjects()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"><option value="">Todas as categorias</option></select></div>
+          <div id="proj-summary" class="grid grid-cols-2 md:grid-cols-5 gap-3 text-center"></div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-3"><input id="proj-search" oninput="renderProjects()" placeholder="Buscar por peça ou categoria" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></div>
 <div id="projects-list" class="space-y-3"><p class="text-xs text-slate-500">Nenhum projeto salvo ainda. Calcule uma peça e clique em "Salvar Projeto".</p></div>
+        </div>
+      </div>
+
+      <!-- ESTOQUE -->
+      <div id="tab-stock" class="tab-content hidden space-y-6">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+          <h3 class="font-bold text-white text-base"><i class="fa-solid fa-plus text-cyan-400"></i> Adicionar peças impressas ao estoque</h3>
+          <form id="form-add-stock" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <select id="stk-project" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></select>
+            <input type="number" id="stk-qty" value="1" min="1" required placeholder="Quantidade" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            <button type="submit" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-colors">Adicionar ao estoque</button>
+          </form>
+        </div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+          <h3 class="font-bold text-white text-base"><i class="fa-solid fa-boxes-stacked text-amber-400"></i> Estoque disponível</h3>
+          <p class="text-xs text-slate-400">Peças já impressas e guardadas. Quando alguém comprar, informe quantas vendeu e por quanto: o estoque diminui e a venda entra nos números de faturamento e lucro.</p>
+          <div id="stock-list" class="space-y-3"></div>
+        </div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+          <h3 class="font-bold text-white text-base"><i class="fa-solid fa-receipt text-emerald-400"></i> Últimas vendas do estoque</h3>
+          <div id="stock-sales" class="space-y-2"></div>
         </div>
       </div>
 
@@ -444,6 +466,7 @@
         renderProjects();
         renderClients();
         renderWholesaleSelect();
+        renderStock();
       }, onErr));
 
       unsubscribers.push(base.collection('clients').onSnapshot(snap => {
@@ -455,6 +478,7 @@
         allOrders = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         renderClients();
         renderProjects();
+        renderStock();
       }, onErr));
 
       base.collection('settings').doc('general').get().then(doc => {
@@ -1020,7 +1044,7 @@
         doc.autoTable({
           ...common, startY: y + 2, theme: 'grid',
           body: [
-            ['Total de pedidos', String(orders.length), 'Clientes com pedidos', String(new Set(orders.map(o => o.clientId)).size)],
+            ['Total de pedidos', String(orders.length), 'Clientes com pedidos', String(new Set(orders.map(o => o.clientId).filter(Boolean)).size)],
             ['Peças vendidas', `${soldQty} un.`, 'Peças em produção', `${prodQty} un.`]
           ],
           columnStyles: { 0: { fontStyle: 'bold', cellWidth: 65 }, 1: { cellWidth: 60 }, 2: { fontStyle: 'bold', cellWidth: 70 }, 3: { cellWidth: 60 } }
@@ -1132,6 +1156,125 @@
       } catch (e) { showError(e, 'Erro ao gerar o PDF'); }
     }
     $('rep-btn').addEventListener('click', generateReportPDF);
+
+    // ===== Estoque =====
+    function renderStock() {
+      const sel = $('stk-project');
+      const cur = sel.value;
+      const groups = {};
+      allProjects.forEach(p => { const c = p.category || 'Sem categoria'; (groups[c] = groups[c] || []).push(p); });
+      sel.innerHTML = '<option value="">Escolha o projeto</option>' + Object.keys(groups).sort().map(c =>
+        `<optgroup label="${esc(c)}">${groups[c].map(p => `<option value="${esc(p.id)}">${esc(p.projectName)}</option>`).join('')}</optgroup>`).join('');
+      sel.value = allProjects.some(p => p.id === cur) ? cur : '';
+
+      const thumbOf = (pr, size) => (pr && (pr.image || '').startsWith('data:image/'))
+        ? `<img src="${pr.image}" alt="" class="${size} object-cover rounded-xl border border-slate-700 shrink-0">`
+        : `<div class="${size} rounded-xl border border-dashed border-slate-700 flex items-center justify-center text-slate-600 shrink-0"><i class="fa-solid fa-image"></i></div>`;
+      const inp = 'bg-slate-800 border border-slate-600 rounded-lg p-2 text-white';
+
+      const inStock = allProjects.filter(p => num(p.stock) > 0);
+      const box = $('stock-list');
+      if (!inStock.length) {
+        box.innerHTML = '<p class="text-xs text-slate-500">Nenhuma peça em estoque. Use o formulário acima depois de imprimir.</p>';
+      } else {
+        const byCat = {};
+        inStock.forEach(p => { const c = p.category || 'Sem categoria'; (byCat[c] = byCat[c] || []).push(p); });
+        box.innerHTML = Object.keys(byCat).sort().map(c => `
+          <h4 class="text-sm font-bold text-slate-300 pt-1 border-b border-slate-700 pb-1"><i class="fa-solid fa-tag text-cyan-400"></i> ${esc(c)}</h4>
+          ${byCat[c].map(p => {
+            const price = num(p.sellPrice) || num(p.priceDirect);
+            const min = num(p.minDirect) || num(p.totalCost);
+            return `
+            <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-3">
+              <div class="flex items-center gap-3">
+                ${thumbOf(p, 'w-16 h-16')}
+                <div class="flex-1 min-w-0">
+                  <p class="font-bold text-cyan-400 text-sm break-words">${esc(p.projectName)}</p>
+                  <p class="text-xs text-slate-400">${p.sellPrice ? 'Seu preço' : 'Sugerido'}: ${money(price)} · Mínimo sem prejuízo: ${money(min)}</p>
+                </div>
+                <div class="text-center shrink-0"><p class="text-[10px] uppercase text-slate-400">Em estoque</p><p class="text-2xl font-black text-amber-400">${num(p.stock)}</p></div>
+              </div>
+              <div class="flex flex-wrap items-end gap-2 text-xs">
+                <div><label class="block text-slate-400 mb-1">Quantas vendeu</label><input type="number" id="sq-${esc(p.id)}" min="1" max="${num(p.stock)}" value="1" class="w-20 ${inp}"></div>
+                <div><label class="block text-slate-400 mb-1">Valor por peça (R$)</label><input type="number" id="sp-${esc(p.id)}" step="0.01" min="0" value="${price.toFixed(2)}" class="w-28 ${inp}"></div>
+                <button onclick="sellFromStock('${esc(p.id)}')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-lg">Registrar venda</button>
+                <span class="ml-auto flex items-center gap-1 text-slate-400">Ajustar:
+                  <button onclick="adjustStock('${esc(p.id)}', -1)" class="${inp} px-2 py-1">-1</button>
+                  <button onclick="adjustStock('${esc(p.id)}', 1)" class="${inp} px-2 py-1">+1</button>
+                </span>
+              </div>
+            </div>`;
+          }).join('')}`).join('');
+      }
+
+      const sales = allOrders.filter(o => o.source === 'estoque').slice(0, 15);
+      $('stock-sales').innerHTML = sales.length ? sales.map(o => {
+        const pr = allProjects.find(x => x.id === o.projectId);
+        return `
+        <div class="flex items-center gap-3 bg-slate-900 p-2.5 rounded-lg border border-slate-700 text-xs">
+          ${thumbOf(pr, 'w-10 h-10')}
+          <div class="flex-1 min-w-0">
+            <span class="font-bold text-cyan-400">${esc(o.projectName)}</span><br>
+            <span class="text-slate-300">${num(o.qty)} un. x ${money(o.unitPrice)} = <b>${money(num(o.qty) * num(o.unitPrice))}</b></span>
+            <span class="text-slate-500"> · ${esc(o.date)}</span>
+          </div>
+          <button onclick="undoStockSale('${esc(o.id)}')" class="text-amber-400 hover:text-amber-300 shrink-0">Desfazer</button>
+        </div>`;
+      }).join('') : '<p class="text-xs text-slate-500">Nenhuma venda do estoque ainda.</p>';
+    }
+
+    $('form-add-stock').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = $('stk-project').value;
+      const n = Math.max(1, parseInt($('stk-qty').value) || 1);
+      if (!id) { alert('Escolha o projeto.'); return; }
+      try {
+        await userRef().collection('projects').doc(id).update({ stock: firebase.firestore.FieldValue.increment(n) });
+        $('stk-qty').value = '1';
+        clearError();
+      } catch (err) { showError(err, 'Erro ao adicionar ao estoque'); }
+    });
+
+    async function adjustStock(id, delta) {
+      const p = allProjects.find(x => x.id === id);
+      if (!p || num(p.stock) + delta < 0) return;
+      try { await userRef().collection('projects').doc(id).update({ stock: firebase.firestore.FieldValue.increment(delta) }); }
+      catch (e) { showError(e, 'Erro ao ajustar o estoque'); }
+    }
+
+    async function sellFromStock(id) {
+      const p = allProjects.find(x => x.id === id);
+      if (!p) return;
+      const qty = parseInt($('sq-' + id).value) || 0;
+      const price = parseFloat($('sp-' + id).value);
+      if (qty < 1) { alert('Informe quantas peças vendeu.'); return; }
+      if (qty > num(p.stock)) { alert(`Só tem ${num(p.stock)} em estoque.`); return; }
+      if (!(price >= 0)) { alert('Informe o valor por peça.'); return; }
+      const min = num(p.minDirect) || num(p.totalCost);
+      if (price < min && !confirm(`O valor (${money(price)}) está abaixo do mínimo sem prejuízo (${money(min)}). Registrar mesmo assim?`)) return;
+      try {
+        const batch = db.batch();
+        batch.set(userRef().collection('orders').doc(), {
+          clientId: '', clientName: 'Venda avulsa (estoque)', projectId: p.id, projectName: p.projectName,
+          qty, unitPrice: price, status: 'vendido', source: 'estoque', color: '', notes: '',
+          date: new Date().toLocaleDateString('pt-BR'), timestamp: Date.now()
+        });
+        batch.update(userRef().collection('projects').doc(id), { stock: firebase.firestore.FieldValue.increment(-qty) });
+        await batch.commit();
+        clearError();
+      } catch (e) { showError(e, 'Erro ao registrar a venda'); }
+    }
+
+    async function undoStockSale(id) {
+      const o = allOrders.find(x => x.id === id);
+      if (!o || !confirm('Desfazer esta venda? As peças voltam para o estoque.')) return;
+      try {
+        const batch = db.batch();
+        batch.delete(userRef().collection('orders').doc(id));
+        if (allProjects.some(x => x.id === o.projectId)) batch.update(userRef().collection('projects').doc(o.projectId), { stock: firebase.firestore.FieldValue.increment(num(o.qty)) });
+        await batch.commit();
+      } catch (e) { showError(e, 'Erro ao desfazer a venda'); }
+    }
 
     let editingOrderId = null;
 
@@ -1524,17 +1667,16 @@
       } catch (e) { showError(e, 'Erro ao excluir projeto'); }
     }
 
+    let projCat = null;
+    const openProjects = new Set();
+    const catOf = (p) => p.category || 'Sem categoria';
+    function openCategory(c) { projCat = c; renderProjects(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    function closeCategory() { projCat = null; $('proj-search').value = ''; renderProjects(); }
+    function toggleProj(id, open) { if (open) openProjects.add(id); else openProjects.delete(id); }
+
     function renderProjects() {
       const term = $('proj-search').value.trim().toLowerCase();
-      const cats = [...new Set(allProjects.map(p => p.category || 'Sem categoria'))].sort();
-      const fsel = $('proj-filter');
-      const cur = fsel.value;
-      fsel.innerHTML = '<option value="">Todas as categorias</option>' + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-      fsel.value = cats.includes(cur) ? cur : '';
-      const st = fsel.value;
       $('cat-list').innerHTML = [...new Set(allProjects.map(p => p.category).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('');
-      const list = allProjects.filter(p => (!st || (p.category || 'Sem categoria') === st) &&
-        (!term || ((p.projectName || '') + ' ' + (p.category || '')).toLowerCase().includes(term)));
 
       let rev = 0, profit = 0, sold = 0, prod = 0;
       allOrders.forEach(o => {
@@ -1546,22 +1688,20 @@
           sold += q;
         } else prod += q;
       });
+      const stockTotal = allProjects.reduce((a, p) => a + num(p.stock), 0);
       const tile = (t, v, c) => `<div class="bg-slate-900 p-3 rounded-xl border border-slate-700"><span class="text-[10px] text-slate-400 block uppercase">${t}</span><span class="font-bold text-sm ${c}">${v}</span></div>`;
-      $('proj-summary').innerHTML = tile('Peças vendidas', sold, 'text-cyan-400') + tile('Em produção', prod, 'text-amber-400') + tile('Faturamento', 'R$ ' + rev.toFixed(2), 'text-emerald-400') + tile('Lucro', 'R$ ' + profit.toFixed(2), 'text-amber-400');
+      $('proj-summary').innerHTML = tile('Peças vendidas', sold, 'text-cyan-400') + tile('Em produção', prod, 'text-amber-400') + tile('Em estoque', stockTotal, 'text-violet-300') + tile('Faturamento', money(rev), 'text-emerald-400') + tile('Lucro', money(profit), 'text-amber-400');
 
       const container = $('projects-list');
-      if (list.length === 0) {
-        container.innerHTML = '<p class="text-xs text-slate-500">Nenhum projeto encontrado.</p>';
-        return;
-      }
-      const cell = (t, v, c = '') => `<div><span class="${c || 'text-slate-400'} block text-[10px]">${t}</span>R$ ${num(v).toFixed(2)}</div>`;
-      const cards = list.map(p => {
-        const img = (p.image || '').startsWith('data:image/')
-          ? `<img src="${p.image}" alt="" class="w-20 h-20 object-cover rounded-xl border border-slate-700 shrink-0">`
-          : `<div class="w-20 h-20 rounded-xl border border-dashed border-slate-700 flex items-center justify-center text-slate-600 shrink-0"><i class="fa-solid fa-image"></i></div>`;
-        const sub = num(p.filCost) + num(p.energyCost) + num(p.wearCost) + num(p.nozzleCostTotal);
-        const k = 1 + num(p.fail) / 100;
-        const failCost = sub * (1 - 1 / k);
+      if (!allProjects.length) { container.innerHTML = '<p class="text-xs text-slate-500">Nenhum projeto salvo ainda. Calcule uma peça e clique em "Salvar Projeto".</p>'; return; }
+      if (projCat && !allProjects.some(p => catOf(p) === projCat)) projCat = null;
+
+      const thumb = (p, size) => (p.image || '').startsWith('data:image/')
+        ? `<img src="${p.image}" alt="" class="${size} object-cover rounded-xl border border-slate-700 shrink-0">`
+        : `<div class="${size} rounded-xl border border-dashed border-slate-700 flex items-center justify-center text-slate-600 shrink-0"><i class="fa-solid fa-image"></i></div>`;
+      const cell = (t, v, c = '') => `<div><span class="${c || 'text-slate-400'} block text-[10px]">${t}</span>${money(v)}</div>`;
+
+      const projCard = (p) => {
         const q = num(p.qty) || 1;
         const batch = num(p.batchCost) || num(p.totalCost) * q;
         const po = allOrders.filter(o => o.projectId === p.id);
@@ -1569,53 +1709,81 @@
         const sUn = soldO.reduce((a, o) => a + num(o.qty), 0);
         const pUn = po.filter(o => o.status !== 'vendido').reduce((a, o) => a + num(o.qty), 0);
         const sRev = soldO.reduce((a, o) => a + num(o.qty) * num(o.unitPrice), 0);
+        const sub = num(p.filCost) + num(p.energyCost) + num(p.wearCost) + num(p.nozzleCostTotal);
+        const failCost = sub * (1 - 1 / (1 + num(p.fail) / 100));
         const lucro = num(p.priceDirect) * (1 - num(p.tax) / 100) - num(p.totalCost);
+        const price = num(p.sellPrice) || num(p.priceDirect);
         return `
-        <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
-          <div class="flex gap-3">
-            ${img}
-            <div class="flex-1 min-w-0 flex justify-between items-start gap-2">
-              <div class="min-w-0">
-                <h4 class="font-bold text-cyan-400 text-sm break-words">${esc(p.projectName)}</h4>
-                <span class="text-[10px] text-slate-400">${esc(p.date)} | ${num(p.weight)}g | ${esc(p.hoursFormatted || (num(p.hours) + 'h'))}</span>
-              </div>
+        <details class="bg-slate-900 rounded-xl border border-slate-700" ${openProjects.has(p.id) ? 'open' : ''} ontoggle="toggleProj('${esc(p.id)}', this.open)">
+          <summary class="flex items-center gap-3 p-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+            ${thumb(p, 'w-16 h-16')}
+            <div class="flex-1 min-w-0">
+              <h4 class="font-bold text-cyan-400 text-sm break-words">${esc(p.projectName)}</h4>
+              <p class="text-[11px] text-slate-400">${esc(p.date)} | ${num(p.weight)}g | ${esc(p.hoursFormatted || (num(p.hours) + 'h'))}</p>
+              <p class="text-xs mt-1"><span class="text-emerald-400 font-bold">${p.sellPrice ? 'Venda' : 'Sugerido'}: ${money(price)}</span> · <span class="text-violet-300">Estoque: ${num(p.stock)}</span> · <span class="text-slate-300">Vendidas: ${sUn}</span></p>
+            </div>
+            <i class="fa-solid fa-chevron-down text-slate-500 text-xs"></i>
+          </summary>
+          <div class="px-4 pb-4 space-y-3">
+            ${p.filaments && p.filaments.length > 1 ? `<p class="text-[11px] text-slate-400">Cores: ${p.filaments.map(f => { const x = localFilaments.find(y => y.id === f.id); return esc(x ? x.name : 'filamento') + ' ' + num(f.grams) + 'g'; }).join(' + ')}</p>` : ''}
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-center bg-slate-800/60 p-2.5 rounded-lg text-xs">
+              ${cell('Filamento', p.filCost)}${cell('Energia', p.energyCost)}${cell('Desgaste', p.wearCost)}${cell('Bico', p.nozzleCostTotal)}
+              ${cell('Extras / licença', p.extras)}${cell('Frete', p.shipping)}${cell('Embalagem', num(p.pack) * q)}
+              ${cell('Mão de obra', num(p.labor) * q)}${cell('Custo total do pedido', batch, 'text-amber-400')}
+            </div>
+            <p class="text-[11px] text-slate-400">${q} un. · Custo por peça: <b class="text-amber-400">${money(p.totalCost)}</b> · Falhas (${num(p.fail)}%) já incluídas: ${money(failCost)} · Margem: ${p.margin ?? '-'}%${num(p.tax) ? ' · Imposto/taxa: ' + num(p.tax) + '%' : ''}</p>
+            <p class="text-[11px] text-slate-300">Lucro por peça (Pix sugerido): <b class="text-emerald-400">${money(lucro)}</b></p>
+            <p class="text-[11px] text-slate-300"><i class="fa-solid fa-bag-shopping text-cyan-400"></i> Vendidos: <b class="text-emerald-400">${sUn} un.</b> (${money(sRev)}) · Em produção: <b class="text-amber-400">${pUn} un.</b> · Em estoque: <b class="text-violet-300">${num(p.stock)} un.</b></p>
+            ${p.minDirect ? `<p class="text-[11px] text-rose-300">Preço mínimo por peça, sem prejuízo: Pix ${money(p.minDirect)} · Mercado Livre ${money(p.minML)} · Shopee ${money(p.minShopee)}</p>` : ''}
+            <div class="flex items-center gap-2 text-xs">
+              <span class="text-slate-400">Meu preço de venda (R$):</span>
+              <input type="number" step="0.01" min="0" id="sell-${esc(p.id)}" value="${p.sellPrice ? num(p.sellPrice).toFixed(2) : ''}" placeholder="Ex: 25.00" class="w-24 bg-slate-800 border border-slate-600 rounded-lg p-1.5 text-white">
+              <button onclick="setSellPrice('${esc(p.id)}')" class="text-cyan-400 hover:text-cyan-300 font-bold">Salvar preço</button>
+            </div>
+            <div class="flex flex-wrap gap-3 text-xs">
+              ${p.sellPrice ? `<span class="text-cyan-300 font-bold">Meu preço: ${money(p.sellPrice)} (lucro ${money(num(p.sellPrice) * (1 - num(p.tax) / 100) - num(p.totalCost))})</span>` : ''}
+              ${p.wholesalePrice ? `<span class="text-violet-300 font-bold">Atacado: ${money(p.wholesalePrice)}</span>` : ''}
+              <span class="text-emerald-400 font-bold">Pix sugerido: ${money(p.priceDirect)}</span>
+              <span class="text-yellow-400 font-bold">Mercado Livre: ${money(p.priceML)}</span>
+              <span class="text-orange-400 font-bold">Shopee: ${money(p.priceShopee)}</span>
+            </div>
+            <div class="flex flex-wrap gap-4 text-xs">
+              ${p.fileName ? `<button onclick="downloadProjectFile('${esc(p.id)}')" class="text-violet-400 hover:text-violet-300 inline-block max-w-[220px] truncate"><i class="fa-solid fa-download"></i> ${esc(p.fileName)}</button>` : ''}
+              <button onclick="editProject('${esc(p.id)}')" class="text-amber-400 hover:text-amber-300"><i class="fa-solid fa-pen"></i> Editar</button>
+              <button onclick="copyQuote('${esc(p.id)}')" class="text-cyan-400 hover:text-cyan-300"><i class="fa-brands fa-whatsapp"></i> Copiar orçamento</button>
+              <button onclick="deleteProject('${esc(p.id)}')" class="text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i> Excluir</button>
             </div>
           </div>
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-center bg-slate-800/60 p-2.5 rounded-lg text-xs">
-            ${cell('Filamento', p.filCost)}${cell('Energia', p.energyCost)}${cell('Desgaste', p.wearCost)}${cell('Bico', p.nozzleCostTotal)}
-            ${cell('Extras / licença', p.extras)}${cell('Frete', p.shipping)}${cell('Embalagem', num(p.pack) * q)}
-            ${cell('Mão de obra', num(p.labor) * q)}${cell('Custo total do pedido', batch, 'text-amber-400')}
-          </div>
-          ${p.filaments && p.filaments.length > 1 ? `<p class="text-[11px] text-slate-400">Cores: ${p.filaments.map(f => { const x = localFilaments.find(y => y.id === f.id); return esc(x ? x.name : 'filamento') + ' ' + num(f.grams) + 'g'; }).join(' + ')}</p>` : ''}
-          <p class="text-[11px] text-slate-400">${q} un. · Custo por peça: <b class="text-amber-400">R$ ${num(p.totalCost).toFixed(2)}</b> · Falhas (${num(p.fail)}%) já incluídas: R$ ${failCost.toFixed(2)} · Margem: ${p.margin ?? '-'}%${num(p.tax) ? ' · Imposto/taxa: ' + num(p.tax) + '%' : ''}</p>
-          <p class="text-[11px] text-slate-300">Lucro por peça (Pix): <b class="text-emerald-400">R$ ${lucro.toFixed(2)}</b> · Pedido de ${q} un.: faturamento R$ ${(num(p.priceDirect) * q).toFixed(2)}, lucro <b class="text-emerald-400">R$ ${(lucro * q).toFixed(2)}</b></p>
-          <p class="text-[11px] text-slate-300"><i class="fa-solid fa-bag-shopping text-cyan-400"></i> Vendidos: <b class="text-emerald-400">${sUn} un.</b> (R$ ${sRev.toFixed(2)}) · Em produção: <b class="text-amber-400">${pUn} un.</b></p>
-          ${p.minDirect ? `<p class="text-[11px] text-rose-300">Preço mínimo por peça, sem prejuízo: Pix R$ ${num(p.minDirect).toFixed(2)} · Mercado Livre R$ ${num(p.minML).toFixed(2)} · Shopee R$ ${num(p.minShopee).toFixed(2)}</p>` : ''}
-          <div class="flex flex-wrap gap-3 text-xs">
-            ${p.sellPrice ? `<span class="text-cyan-300 font-bold">Meu preço: R$ ${num(p.sellPrice).toFixed(2)} (lucro R$ ${(num(p.sellPrice) * (1 - num(p.tax) / 100) - num(p.totalCost)).toFixed(2)})</span>` : ''}
-            ${p.wholesalePrice ? `<span class="text-violet-300 font-bold">Atacado: R$ ${num(p.wholesalePrice).toFixed(2)}</span>` : ''}
-            <span class="text-emerald-400 font-bold">Pix sugerido: R$ ${num(p.priceDirect).toFixed(2)}</span>
-            <span class="text-yellow-400 font-bold">Mercado Livre: R$ ${num(p.priceML).toFixed(2)}</span>
-            <span class="text-orange-400 font-bold">Shopee: R$ ${num(p.priceShopee).toFixed(2)}</span>
-          </div>
-          <div class="flex items-center gap-2 text-xs">
-            <span class="text-slate-400">Meu preço de venda (R$):</span>
-            <input type="number" step="0.01" min="0" id="sell-${esc(p.id)}" value="${p.sellPrice ? num(p.sellPrice).toFixed(2) : ''}" placeholder="Ex: 25.00" class="w-24 bg-slate-800 border border-slate-600 rounded-lg p-1.5 text-white">
-            <button onclick="setSellPrice('${esc(p.id)}')" class="text-cyan-400 hover:text-cyan-300 font-bold">Salvar preço</button>
-          </div>
-          <div class="flex flex-wrap gap-4 text-xs">
-            ${p.fileName ? `<button onclick="downloadProjectFile('${esc(p.id)}')" class="text-violet-400 hover:text-violet-300 inline-block max-w-[220px] truncate"><i class="fa-solid fa-download"></i> ${esc(p.fileName)}</button>` : ''}
-            <button onclick="editProject('${esc(p.id)}')" class="text-amber-400 hover:text-amber-300"><i class="fa-solid fa-pen"></i> Editar</button>
-            <button onclick="copyQuote('${esc(p.id)}')" class="text-cyan-400 hover:text-cyan-300"><i class="fa-brands fa-whatsapp"></i> Copiar orçamento</button>
-            <button onclick="deleteProject('${esc(p.id)}')" class="text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i> Excluir</button>
-          </div>
-        </div>`;
-      });
-      const groups = {};
-      list.forEach((p, i) => { const c = p.category || 'Sem categoria'; (groups[c] = groups[c] || []).push(cards[i]); });
-      container.innerHTML = Object.keys(groups)
-        .sort((a, b) => a === 'Sem categoria' ? 1 : b === 'Sem categoria' ? -1 : a.localeCompare(b))
-        .map(c => `<h4 class="text-sm font-bold text-slate-300 pt-2 border-b border-slate-700 pb-1"><i class="fa-solid fa-tag text-cyan-400"></i> ${esc(c)} <span class="text-xs text-slate-500">(${groups[c].length})</span></h4>${groups[c].join('')}`).join('');
+        </details>`;
+      };
+
+      // 1) busca: lista direta
+      if (term) {
+        const list = allProjects.filter(p => ((p.projectName || '') + ' ' + catOf(p)).toLowerCase().includes(term));
+        container.innerHTML = list.length ? `<p class="text-xs text-slate-400">${list.length} resultado(s) da busca:</p>` + list.map(projCard).join('') : '<p class="text-xs text-slate-500">Nenhum projeto encontrado.</p>';
+        return;
+      }
+      // 2) dentro de uma categoria
+      if (projCat) {
+        const list = allProjects.filter(p => catOf(p) === projCat);
+        container.innerHTML = `<div class="flex items-center justify-between gap-2"><button onclick="closeCategory()" class="text-xs text-cyan-400 hover:text-cyan-300 font-bold"><i class="fa-solid fa-arrow-left"></i> Voltar às categorias</button><h4 class="font-bold text-white text-sm"><i class="fa-solid fa-tag text-cyan-400"></i> ${esc(projCat)} <span class="text-xs text-slate-500">(${list.length})</span></h4></div>` + list.map(projCard).join('');
+        return;
+      }
+      // 3) visão geral: só as categorias
+      const cats = {};
+      allProjects.forEach(p => { (cats[catOf(p)] = cats[catOf(p)] || []).push(p); });
+      container.innerHTML = '<p class="text-xs text-slate-400">Clique em uma categoria para ver os projetos dela.</p><div class="grid grid-cols-2 md:grid-cols-3 gap-3">' +
+        Object.keys(cats).sort((a, b) => a === 'Sem categoria' ? 1 : b === 'Sem categoria' ? -1 : a.localeCompare(b)).map(c => {
+          const ps = cats[c];
+          const withImg = ps.find(p => (p.image || '').startsWith('data:image/')) || ps[0];
+          const stk = ps.reduce((a, p) => a + num(p.stock), 0);
+          const sUn = allOrders.filter(o => o.status === 'vendido' && ps.some(p => p.id === o.projectId)).reduce((a, o) => a + num(o.qty), 0);
+          return `<button type="button" data-cat="${esc(c)}" onclick="openCategory(this.dataset.cat)" class="text-left p-3 rounded-2xl border border-slate-700 bg-slate-900 hover:border-cyan-500 transition-colors space-y-2">
+            ${thumb(withImg, 'w-full aspect-square')}
+            <p class="font-bold text-cyan-400 text-sm break-words"><i class="fa-solid fa-tag text-xs"></i> ${esc(c)}</p>
+            <p class="text-[11px] text-slate-400">${ps.length} projeto(s)<br>Estoque: ${stk} un. · Vendidas: ${sUn} un.</p>
+          </button>`;
+        }).join('') + '</div>';
     }
   </script>
 </body>
