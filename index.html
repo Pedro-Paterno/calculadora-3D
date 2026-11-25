@@ -226,9 +226,13 @@
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
           <h3 class="font-bold text-white text-base"><i class="fa-solid fa-plus text-cyan-400"></i> Adicionar peças impressas ao estoque</h3>
           <form id="form-add-stock" class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <select id="stk-project" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></select>
+            <div class="md:col-span-3 space-y-2">
+              <select id="stk-category" onchange="renderStockPicker()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></select>
+              <input type="hidden" id="stk-project">
+              <div id="stk-grid" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
+            </div>
             <input type="number" id="stk-qty" value="1" min="1" required placeholder="Quantidade" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
-            <button type="submit" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-colors">Adicionar ao estoque</button>
+            <button type="submit" class="md:col-span-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-colors">Adicionar ao estoque</button>
           </form>
         </div>
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
@@ -472,6 +476,7 @@
       unsubscribers.push(base.collection('clients').onSnapshot(snap => {
         allClients = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
         renderClients();
+        renderStock();
       }, onErr));
 
       unsubscribers.push(base.collection('orders').onSnapshot(snap => {
@@ -1159,18 +1164,13 @@
 
     // ===== Estoque =====
     function renderStock() {
-      const sel = $('stk-project');
-      const cur = sel.value;
-      const groups = {};
-      allProjects.forEach(p => { const c = p.category || 'Sem categoria'; (groups[c] = groups[c] || []).push(p); });
-      sel.innerHTML = '<option value="">Escolha o projeto</option>' + Object.keys(groups).sort().map(c =>
-        `<optgroup label="${esc(c)}">${groups[c].map(p => `<option value="${esc(p.id)}">${esc(p.projectName)}</option>`).join('')}</optgroup>`).join('');
-      sel.value = allProjects.some(p => p.id === cur) ? cur : '';
+      renderStockPicker();
 
       const thumbOf = (pr, size) => (pr && (pr.image || '').startsWith('data:image/'))
         ? `<img src="${pr.image}" alt="" class="${size} object-cover rounded-xl border border-slate-700 shrink-0">`
         : `<div class="${size} rounded-xl border border-dashed border-slate-700 flex items-center justify-center text-slate-600 shrink-0"><i class="fa-solid fa-image"></i></div>`;
       const inp = 'bg-slate-800 border border-slate-600 rounded-lg p-2 text-white';
+      const clientOpts = '<option value="">Venda avulsa (sem cliente)</option>' + allClients.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
 
       const inStock = allProjects.filter(p => num(p.stock) > 0);
       const box = $('stock-list');
@@ -1197,6 +1197,7 @@
               <div class="flex flex-wrap items-end gap-2 text-xs">
                 <div><label class="block text-slate-400 mb-1">Quantas vendeu</label><input type="number" id="sq-${esc(p.id)}" min="1" max="${num(p.stock)}" value="1" class="w-20 ${inp}"></div>
                 <div><label class="block text-slate-400 mb-1">Valor por peça (R$)</label><input type="number" id="sp-${esc(p.id)}" step="0.01" min="0" value="${price.toFixed(2)}" class="w-28 ${inp}"></div>
+                <div><label class="block text-slate-400 mb-1">Cliente (opcional)</label><select id="sc-${esc(p.id)}" class="max-w-[180px] ${inp}">${clientOpts}</select></div>
                 <button onclick="sellFromStock('${esc(p.id)}')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-lg">Registrar venda</button>
                 <span class="ml-auto flex items-center gap-1 text-slate-400">Ajustar:
                   <button onclick="adjustStock('${esc(p.id)}', -1)" class="${inp} px-2 py-1">-1</button>
@@ -1216,7 +1217,7 @@
           <div class="flex-1 min-w-0">
             <span class="font-bold text-cyan-400">${esc(o.projectName)}</span><br>
             <span class="text-slate-300">${num(o.qty)} un. x ${money(o.unitPrice)} = <b>${money(num(o.qty) * num(o.unitPrice))}</b></span>
-            <span class="text-slate-500"> · ${esc(o.date)}</span>
+            <span class="text-slate-500"> · ${esc(o.date)}</span>${o.clientId ? ` <span class="text-violet-300">· ${esc(o.clientName)}</span>` : ''}
           </div>
           <button onclick="undoStockSale('${esc(o.id)}')" class="text-amber-400 hover:text-amber-300 shrink-0">Desfazer</button>
         </div>`;
@@ -1227,13 +1228,32 @@
       e.preventDefault();
       const id = $('stk-project').value;
       const n = Math.max(1, parseInt($('stk-qty').value) || 1);
-      if (!id) { alert('Escolha o projeto.'); return; }
+      if (!id) { alert('Escolha a categoria e clique no projeto que você imprimiu.'); return; }
       try {
         await userRef().collection('projects').doc(id).update({ stock: firebase.firestore.FieldValue.increment(n) });
         $('stk-qty').value = '1';
         clearError();
       } catch (err) { showError(err, 'Erro ao adicionar ao estoque'); }
     });
+
+    function pickStockProject(id) { $('stk-project').value = id; renderStockPicker(); }
+
+    function renderStockPicker() {
+      const sel = $('stk-category');
+      const cats = [...new Set(allProjects.map(p => p.category || 'Sem categoria'))].sort();
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">1) Escolha a categoria</option>' + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      sel.value = cats.includes(cur) ? cur : '';
+      const grid = $('stk-grid');
+      if (!sel.value) { grid.innerHTML = '<p class="text-xs text-slate-500 col-span-full">2) Depois de escolher a categoria, os projetos aparecem aqui com a imagem. Clique no que você imprimiu.</p>'; return; }
+      const chosen = $('stk-project').value;
+      grid.innerHTML = allProjects.filter(p => (p.category || 'Sem categoria') === sel.value).map(p => {
+        const img = (p.image || '').startsWith('data:image/')
+          ? `<img src="${p.image}" alt="" class="w-full aspect-square object-cover rounded-lg">`
+          : `<div class="w-full aspect-square rounded-lg border border-dashed border-slate-700 flex items-center justify-center text-slate-600"><i class="fa-solid fa-image"></i></div>`;
+        return `<button type="button" onclick="pickStockProject('${esc(p.id)}')" class="text-left p-2 rounded-xl border ${p.id === chosen ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 bg-slate-900'} hover:border-cyan-500 transition-colors">${img}<p class="text-xs font-bold text-cyan-400 mt-1 break-words">${esc(p.projectName)}</p><p class="text-[10px] text-slate-400">Em estoque: ${num(p.stock)}</p></button>`;
+      }).join('') || '<p class="text-xs text-slate-500 col-span-full">Nenhum projeto nessa categoria.</p>';
+    }
 
     async function adjustStock(id, delta) {
       const p = allProjects.find(x => x.id === id);
@@ -1250,12 +1270,13 @@
       if (qty < 1) { alert('Informe quantas peças vendeu.'); return; }
       if (qty > num(p.stock)) { alert(`Só tem ${num(p.stock)} em estoque.`); return; }
       if (!(price >= 0)) { alert('Informe o valor por peça.'); return; }
+      const cl = allClients.find(c => c.id === $('sc-' + id).value);
       const min = num(p.minDirect) || num(p.totalCost);
       if (price < min && !confirm(`O valor (${money(price)}) está abaixo do mínimo sem prejuízo (${money(min)}). Registrar mesmo assim?`)) return;
       try {
         const batch = db.batch();
         batch.set(userRef().collection('orders').doc(), {
-          clientId: '', clientName: 'Venda avulsa (estoque)', projectId: p.id, projectName: p.projectName,
+          clientId: cl ? cl.id : '', clientName: cl ? cl.name : 'Venda avulsa (estoque)', projectId: p.id, projectName: p.projectName,
           qty, unitPrice: price, status: 'vendido', source: 'estoque', color: '', notes: '',
           date: new Date().toLocaleDateString('pt-BR'), timestamp: Date.now()
         });
