@@ -215,7 +215,7 @@
       <div id="tab-projects" class="tab-content hidden space-y-6">
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
           <h3 class="font-bold text-white text-base"><i class="fa-solid fa-folder-open text-cyan-400"></i> Projetos e Orçamentos Salvos</h3>
-          <div id="proj-summary" class="grid grid-cols-2 md:grid-cols-5 gap-3 text-center"></div>
+          <div id="proj-summary" class="grid grid-cols-2 md:grid-cols-3 gap-3 text-center"></div>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-3"><input id="proj-search" oninput="renderProjects()" placeholder="Buscar por peça ou categoria" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></div>
 <div id="projects-list" class="space-y-3"><p class="text-xs text-slate-500">Nenhum projeto salvo ainda. Calcule uma peça e clique em "Salvar Projeto".</p></div>
         </div>
@@ -270,24 +270,31 @@
             <input type="number" id="ord-price" step="0.01" min="0" required placeholder="Valor cobrado por peça (R$)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
             <input type="text" id="ord-color" list="color-list" placeholder="Cor que o cliente quer (ex: Vermelho)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"><datalist id="color-list"></datalist>
             <textarea id="ord-notes" rows="2" placeholder="Descrição / personalização (ex: nome 'Maria', tamanho 20cm, embalagem de presente)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></textarea>
-            <select id="ord-status" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"><option value="producao">Em produção</option><option value="vendido">Vendido / entregue</option></select>
-            <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm transition-colors"><span id="ord-submit-label">Salvar Pedido</span></button>
+            <select id="ord-status" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"><option value="producao">Em produção</option><option value="impresso">Impresso (aguardando entrega/pagamento)</option><option value="entregue">Entregue</option></select>
+            <label class="flex items-center gap-2 text-sm text-slate-300 px-2"><input type="checkbox" id="ord-paid" class="w-4 h-4"> Cliente já pagou</label>
+            <button type="submit" class="md:col-span-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm transition-colors"><span id="ord-submit-label">Salvar Pedido</span></button>
           </form>
           <p id="ord-hint" class="text-xs text-slate-400"></p>
         </div>
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
           <h3 class="font-bold text-white text-base"><i class="fa-solid fa-list-ol text-amber-400"></i> Fila de Produção</h3>
-          <p class="text-xs text-slate-400">Pedidos em produção na ordem em que foram feitos: quem pediu primeiro está no topo. Ao terminar e entregar, clique em Concluir.</p>
+          <p class="text-xs text-slate-400">Pedidos que ainda faltam imprimir, na ordem em que foram feitos: quem pediu primeiro está no topo. Ao terminar de imprimir, clique em Impresso: o pedido vai para a lista de aguardando entrega e pagamento.</p>
           <div id="queue-list" class="space-y-2"></div>
+        </div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+          <h3 class="font-bold text-white text-base"><i class="fa-solid fa-box text-blue-400"></i> Impressos: aguardando entrega e pagamento</h3>
+          <p class="text-xs text-slate-400">Peças já impressas. Marque quando entregar e quando o cliente pagar (pode ser em qualquer ordem). Quando as duas coisas estiverem marcadas, o pedido sai daqui e conta como venda concluída.</p>
+          <div id="waiting-list" class="space-y-2"></div>
         </div>
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
           <h3 class="font-bold text-white text-base"><i class="fa-solid fa-file-pdf text-cyan-400"></i> Relatório em PDF</h3>
           <p class="text-xs text-slate-400">Gera um PDF detalhado com resumo, pedidos em produção (com quadradinho para marcar), pedidos vendidos, totais por cliente e por projeto. Pronto para imprimir e guardar.</p>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <select id="rep-type" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
-              <option value="all">Completo (produção + vendidos)</option>
-              <option value="producao">Só pedidos em produção</option>
-              <option value="vendido">Só pedidos vendidos</option>
+              <option value="all">Completo (todas as etapas)</option>
+              <option value="producao">Só fila de produção (a imprimir)</option>
+              <option value="espera">Só impressos aguardando entrega/pagamento</option>
+              <option value="vendido">Só concluídos (entregues e pagos)</option>
             </select>
             <select id="rep-client" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></select>
             <button id="rep-btn" type="button" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-colors"><i class="fa-solid fa-download"></i> Gerar PDF</button>
@@ -981,20 +988,33 @@
           qty: Math.max(1, parseInt($('ord-qty').value) || 1),
           unitPrice: parseFloat($('ord-price').value) || 0,
           status: $('ord-status').value,
+          paid: $('ord-paid').checked,
           color: $('ord-color').value.trim(),
           notes: $('ord-notes').value.trim()
         };
         if (editingOrderId) await userRef().collection('orders').doc(editingOrderId).update(data);
         else await userRef().collection('orders').add({ ...data, date: new Date().toLocaleDateString('pt-BR'), timestamp: Date.now() });
         $('ord-qty').value = '1'; $('ord-price').value = ''; $('ord-hint').textContent = '';
-        $('ord-project').value = ''; $('ord-color').value = ''; $('ord-notes').value = ''; endOrderEdit(); renderOrderPicker();
+        $('ord-project').value = ''; $('ord-color').value = ''; $('ord-notes').value = ''; $('ord-paid').checked = false; endOrderEdit(); renderOrderPicker();
         clearError();
       } catch (err) { showError(err, 'Erro ao salvar pedido'); }
     });
 
+    // 'vendido' é o formato antigo: conta como entregue e pago
+    const stOf = (o) => o.status === 'vendido' ? 'entregue' : (o.status || 'producao');
+    const paidOf = (o) => typeof o.paid === 'boolean' ? o.paid : o.status === 'vendido';
+
     async function setOrderStatus(id, status) {
-      try { await userRef().collection('orders').doc(id).update({ status }); }
+      const o = allOrders.find(x => x.id === id);
+      const data = { status };
+      if (o && typeof o.paid !== 'boolean') data.paid = paidOf(o); // preserva o "pago" de pedidos antigos
+      try { await userRef().collection('orders').doc(id).update(data); }
       catch (e) { showError(e, 'Erro ao atualizar pedido'); }
+    }
+
+    async function setOrderPaid(id, paid) {
+      try { await userRef().collection('orders').doc(id).update({ paid }); }
+      catch (e) { showError(e, 'Erro ao atualizar pagamento'); }
     }
 
     async function deleteClient(id) {
@@ -1018,8 +1038,10 @@
         const type = $('rep-type').value, cid = $('rep-client').value;
         const client = allClients.find(c => c.id === cid);
         const orders = allOrders.filter(o => !cid || o.clientId === cid);
-        const prod = orders.filter(o => o.status !== 'vendido').sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); // fila: quem pediu primeiro
-        const sold = orders.filter(o => o.status === 'vendido');
+        const byDate = (a, b) => (a.timestamp || 0) - (b.timestamp || 0);
+        const prod = orders.filter(o => stOf(o) === 'producao').sort(byDate); // fila: quem pediu primeiro
+        const wait = orders.filter(o => stOf(o) === 'impresso' || (stOf(o) === 'entregue' && !paidOf(o))).sort(byDate);
+        const sold = orders.filter(o => stOf(o) === 'entregue' && paidOf(o));
 
         const info = (o) => {
           const pr = allProjects.find(x => x.id === o.projectId);
@@ -1034,7 +1056,7 @@
         const sumOf = (list, k) => list.reduce((a, o) => a + (info(o)[k] || 0), 0);
         const fin = (list) => { const k = list.filter(o => info(o).pr); return { rev: sumOf(k, 'total'), tax: sumOf(k, 'tax'), cost: sumOf(k, 'cost'), guard: sumOf(k, 'guard'), livre: sumOf(k, 'livre'), excl: list.length - k.length }; };
 
-        const typeLabel = { all: 'Completo', producao: 'Somente em produção', vendido: 'Somente vendidos' }[type];
+        const typeLabel = { all: 'Completo', producao: 'Somente fila de produção', espera: 'Somente impressos aguardando', vendido: 'Somente concluídos' }[type];
         let y = 16;
         doc.setFontSize(18); doc.setTextColor(8, 145, 178); doc.text('PrintCost 3D', 15, y);
         doc.setFontSize(13); doc.setTextColor(30); doc.text('Relatório de Pedidos e Vendas', 15, y + 8);
@@ -1050,14 +1072,15 @@
           ...common, startY: y + 2, theme: 'grid',
           body: [
             ['Total de pedidos', String(orders.length), 'Clientes com pedidos', String(new Set(orders.map(o => o.clientId).filter(Boolean)).size)],
-            ['Peças vendidas', `${soldQty} un.`, 'Peças em produção', `${prodQty} un.`]
+            ['Em produção (fila)', `${sumOf(prod, 'q')} un.`, 'Impressos aguardando entrega/pagamento', `${sumOf(wait, 'q')} un.`],
+            ['Entregues e pagos', `${soldQty} un.`, '', '']
           ],
           columnStyles: { 0: { fontStyle: 'bold', cellWidth: 65 }, 1: { cellWidth: 60 }, 2: { fontStyle: 'bold', cellWidth: 70 }, 3: { cellWidth: 60 } }
         });
         y = doc.lastAutoTable.finalY + 9;
 
         // Quanto guardar e quanto fica livre
-        const fs = fin(sold), fp = fin(prod);
+        const fs = fin(orders.filter(paidOf)), fp = fin(orders.filter(o => !paidOf(o)));
         const tot = { rev: fs.rev + fp.rev, tax: fs.tax + fp.tax, cost: fs.cost + fp.cost, guard: fs.guard + fp.guard, livre: fs.livre + fp.livre };
         const finRow = (label, f) => [label, R(f.rev), R(f.tax), R(f.cost), R(f.guard), R(f.livre)];
         if (y > H - 60) { doc.addPage(); y = 18; }
@@ -1065,14 +1088,14 @@
         doc.autoTable({
           ...common, startY: y + 2, theme: 'grid',
           head: [['', 'Faturamento', 'Impostos / taxas', 'Custos de produção', 'GUARDAR (custos + impostos)', 'VALOR LIVRE (lucro)']],
-          body: [finRow('Já vendidos', fs), finRow('Em produção (previsão a receber)', fp), finRow('Total (vendidos + produção)', tot)],
+          body: [finRow('Já recebido (pagos)', fs), finRow('A receber (ainda não pagos)', fp), finRow('Total', tot)],
           headStyles: { fillColor: [71, 85, 105] },
           columnStyles: { 0: { fontStyle: 'bold', cellWidth: 62 }, 4: { fontStyle: 'bold', fillColor: [254, 243, 199] }, 5: { fontStyle: 'bold', fillColor: [209, 250, 229] } },
           didParseCell: (d) => { if (d.section === 'body' && d.row.index === 2) d.cell.styles.fontStyle = 'bold'; }
         });
         y = doc.lastAutoTable.finalY + 4;
         doc.setFontSize(8); doc.setTextColor(100);
-        const expl = doc.splitTextToSize('GUARDAR = o que foi gasto para fazer as peças (filamento, energia, desgaste da impressora e do bico, falhas, embalagem, mão de obra, frete) mais impostos/taxas. Separe esse valor para repor material e manter a impressora funcionando. VALOR LIVRE = o que sobra para você. Em produção é só previsão: entra no caixa quando o pedido for pago.' + ((fs.excl + fp.excl) ? ` (${fs.excl + fp.excl} pedido(s) de projetos excluídos ficam de fora desses valores.)` : ''), W - 30);
+        const expl = doc.splitTextToSize('GUARDAR = o que foi gasto para fazer as peças (filamento, energia, desgaste da impressora e do bico, falhas, embalagem, mão de obra, frete) mais impostos/taxas. Separe esse valor para repor material e manter a impressora funcionando. VALOR LIVRE = o que sobra para você. A receber é só previsão: entra no caixa quando o cliente pagar.' + ((fs.excl + fp.excl) ? ` (${fs.excl + fp.excl} pedido(s) de projetos excluídos ficam de fora desses valores.)` : ''), W - 30);
         doc.text(expl, 15, y);
         y += expl.length * 3.6 + 8;
 
@@ -1095,11 +1118,11 @@
             const vals = [R(o.unitPrice), R(i.total), i.pr ? R(i.guard) : '-', i.pr ? R(i.livre) : '-'];
             return isProd
               ? [`${idx + 1}º`, o.date || '', cli, proj, o.color || '-', String(i.q), ...vals, o.notes || '-', '[    ]']
-              : [o.date || '', cli, proj, o.color || '-', String(i.q), ...vals, o.notes || '-'];
+              : [o.date || '', cli, proj, o.color || '-', String(i.q), ...vals, stOf(o) === 'entregue' ? 'Entregue' : 'Pendente', paidOf(o) ? 'Pago' : 'Pendente', o.notes || '-'];
           });
           const head = isProd
             ? [['Ordem', 'Data', 'Cliente', 'Projeto', 'Cor', 'Qtd', 'Valor un.', 'Total', 'Guardar', 'Livre', 'Descrição / personalização', 'Feito']]
-            : [['Data', 'Cliente', 'Projeto', 'Cor', 'Qtd', 'Valor un.', 'Total', 'Guardar', 'Livre', 'Descrição / personalização']];
+            : [['Data', 'Cliente', 'Projeto', 'Cor', 'Qtd', 'Valor un.', 'Total', 'Guardar', 'Livre', 'Entrega', 'Pagamento', 'Descrição / personalização']];
           const imgCol = isProd ? 3 : 2;
           doc.autoTable({
             ...common, startY, head, body,
@@ -1108,7 +1131,12 @@
             bodyStyles: { minCellHeight: 16 },
             columnStyles: isProd
               ? { 0: { cellWidth: 11, fontStyle: 'bold' }, 1: { cellWidth: 17 }, 2: { cellWidth: 26 }, 4: { cellWidth: 20 }, 5: { cellWidth: 9 }, 6: { cellWidth: 19 }, 7: { cellWidth: 20 }, 8: { cellWidth: 20 }, 9: { cellWidth: 20 }, 10: { cellWidth: 48 }, 11: { cellWidth: 13 } }
-              : { 0: { cellWidth: 17 }, 1: { cellWidth: 26 }, 3: { cellWidth: 20 }, 4: { cellWidth: 9 }, 5: { cellWidth: 19 }, 6: { cellWidth: 20 }, 7: { cellWidth: 20 }, 8: { cellWidth: 20 }, 9: { cellWidth: 55 } },
+              : { 0: { cellWidth: 17 }, 1: { cellWidth: 26 }, 3: { cellWidth: 20 }, 4: { cellWidth: 9 }, 5: { cellWidth: 19 }, 6: { cellWidth: 20 }, 7: { cellWidth: 19 }, 8: { cellWidth: 19 }, 9: { cellWidth: 18 }, 10: { cellWidth: 18 }, 11: { cellWidth: 40 } },
+            didParseCell: (d) => {
+              if (!isProd && d.section === 'body' && (d.column.index === 9 || d.column.index === 10) && d.cell.raw === 'Pendente') {
+                d.cell.styles.textColor = [185, 28, 28]; d.cell.styles.fontStyle = 'bold';
+              }
+            },
             didDrawCell: (d) => {
               if (d.section === 'body' && d.column.index === imgCol && imgs[d.row.index]) {
                 try { doc.addImage(imgs[d.row.index], 'JPEG', d.cell.x + 1, d.cell.y + 1, 13, 13); } catch (_) {}
@@ -1122,8 +1150,9 @@
           y += 12;
         };
 
-        if (type !== 'vendido') ordersTable('Fila de produção: pedidos em produção (quem pediu primeiro vem primeiro)', prod, true, [217, 119, 6]);
-        if (type !== 'producao') ordersTable('Pedidos vendidos / entregues', sold, false, [5, 150, 105]);
+        if (type === 'all' || type === 'producao') ordersTable('Fila de produção: ainda para imprimir (quem pediu primeiro vem primeiro)', prod, true, [217, 119, 6]);
+        if (type === 'all' || type === 'espera') ordersTable('Impressos: aguardando entrega e/ou pagamento', wait, false, [37, 99, 235]);
+        if (type === 'all' || type === 'vendido') ordersTable('Concluídos: entregues e pagos', sold, false, [5, 150, 105]);
 
         const small = (title, head, body) => {
           if (!body.length) return;
@@ -1134,21 +1163,21 @@
         };
 
         if (!cid) {
-          small('Resumo por cliente', ['Cliente', 'Telefone', 'Pedidos', 'Vendido', 'Em produção'],
+          small('Resumo por cliente', ['Cliente', 'Telefone', 'Pedidos', 'Recebido', 'A receber'],
             allClients.map(c => {
               const os = orders.filter(o => o.clientId === c.id);
               if (!os.length) return null;
-              return [c.name, c.phone || '-', String(os.length), R(sumOf(os.filter(o => o.status === 'vendido'), 'total')), R(sumOf(os.filter(o => o.status !== 'vendido'), 'total'))];
+              return [c.name, c.phone || '-', String(os.length), R(sumOf(os.filter(paidOf), 'total')), R(sumOf(os.filter(o => !paidOf(o)), 'total'))];
             }).filter(Boolean));
         }
 
         const projIds = [...new Set(orders.map(o => o.projectId))];
-        small('Resumo por projeto', ['Projeto', 'Categoria', 'Vendidos (un.)', 'Em produção (un.)', 'Faturado'],
+        small('Resumo por projeto', ['Projeto', 'Categoria', 'Entregues (un.)', 'Pendentes (un.)', 'Faturado (recebido)'],
           projIds.map(id => {
             const os = orders.filter(o => o.projectId === id);
             const pr = allProjects.find(x => x.id === id);
-            const so = os.filter(o => o.status === 'vendido');
-            return [os[0].projectName, pr ? (pr.category || 'Sem categoria') : '-', String(sumOf(so, 'q')), String(sumOf(os.filter(o => o.status !== 'vendido'), 'q')), R(sumOf(so, 'total'))];
+            const so = os.filter(o => stOf(o) === 'entregue');
+            return [os[0].projectName, pr ? (pr.category || 'Sem categoria') : '-', String(sumOf(so, 'q')), String(sumOf(os.filter(o => stOf(o) !== 'entregue'), 'q')), R(sumOf(os.filter(paidOf), 'total'))];
           }));
 
         const pages = doc.getNumberOfPages();
@@ -1277,7 +1306,7 @@
         const batch = db.batch();
         batch.set(userRef().collection('orders').doc(), {
           clientId: cl ? cl.id : '', clientName: cl ? cl.name : 'Venda avulsa (estoque)', projectId: p.id, projectName: p.projectName,
-          qty, unitPrice: price, status: 'vendido', source: 'estoque', color: '', notes: '',
+          qty, unitPrice: price, status: 'entregue', paid: true, source: 'estoque', color: '', notes: '',
           date: new Date().toLocaleDateString('pt-BR'), timestamp: Date.now()
         });
         batch.update(userRef().collection('projects').doc(id), { stock: firebase.firestore.FieldValue.increment(-qty) });
@@ -1312,6 +1341,7 @@
     function cancelOrderEdit() {
       endOrderEdit();
       ['ord-project', 'ord-price', 'ord-color', 'ord-notes'].forEach(id => { $(id).value = ''; });
+      $('ord-paid').checked = false;
       $('ord-qty').value = '1';
       $('ord-hint').textContent = '';
       renderOrderPicker();
@@ -1328,7 +1358,8 @@
       renderOrderPicker();
       $('ord-qty').value = num(o.qty) || 1;
       $('ord-price').value = num(o.unitPrice).toFixed(2);
-      $('ord-status').value = o.status || 'producao';
+      $('ord-status').value = stOf(o);
+      $('ord-paid').checked = paidOf(o);
       $('ord-color').value = o.color || '';
       $('ord-notes').value = o.notes || '';
       updateOrderHint();
@@ -1363,7 +1394,39 @@
     }
 
     function queueOrders() {
-      return allOrders.filter(o => o.status !== 'vendido').sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      return allOrders.filter(o => stOf(o) === 'producao').sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+    }
+
+    function renderWaiting() {
+      const list = allOrders.filter(o => stOf(o) === 'impresso' || (stOf(o) === 'entregue' && !paidOf(o)))
+        .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      const box = $('waiting-list');
+      if (!list.length) { box.innerHTML = '<p class="text-xs text-slate-500">Nada aguardando entrega ou pagamento.</p>'; return; }
+      box.innerHTML = list.map(o => {
+        const pr = allProjects.find(x => x.id === o.projectId);
+        const cl = allClients.find(c => c.id === o.clientId);
+        const delivered = stOf(o) === 'entregue', paid = paidOf(o);
+        const thumb = (pr && (pr.image || '').startsWith('data:image/'))
+          ? `<img src="${pr.image}" alt="" class="w-16 h-16 object-cover rounded-xl border border-slate-700 shrink-0">`
+          : `<div class="w-16 h-16 rounded-xl border border-dashed border-slate-700 flex items-center justify-center text-slate-600 shrink-0"><i class="fa-solid fa-image"></i></div>`;
+        const chip = (ok, okTxt, noTxt) => `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}">${ok ? okTxt : noTxt}</span>`;
+        return `
+        <div class="flex flex-wrap items-center gap-3 bg-slate-900 p-3 rounded-xl border border-slate-700">
+          ${thumb}
+          <div class="flex-1 min-w-[150px]">
+            <p class="text-base font-bold text-white break-words"><i class="fa-solid fa-user text-slate-500 text-sm"></i> ${esc(o.clientName)}</p>
+            <p class="text-sm font-bold text-cyan-400 break-words">${esc(o.projectName)} <span class="text-slate-300 font-normal">- ${num(o.qty)} un. · ${money(num(o.qty) * num(o.unitPrice))}</span></p>
+            ${o.color ? `<p class="text-xs text-violet-300"><i class="fa-solid fa-palette"></i> Cor: ${esc(o.color)}</p>` : ''}
+            ${o.notes ? `<p class="text-xs text-amber-300 whitespace-pre-line"><i class="fa-solid fa-note-sticky"></i> ${esc(o.notes)}</p>` : ''}
+            <p class="mt-1 flex flex-wrap gap-2">${chip(delivered, 'Entregue', 'Entrega pendente')} ${chip(paid, 'Pago', 'Pagamento pendente')}${cl && cl.phone ? ` <span class="text-[11px] text-slate-500">${esc(cl.phone)}</span>` : ''}</p>
+          </div>
+          <div class="flex flex-col gap-2 shrink-0">
+            ${delivered ? '' : `<button onclick="setOrderStatus('${esc(o.id)}', 'entregue')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-lg text-xs">Marcar entregue</button>`}
+            ${paid ? '' : `<button onclick="setOrderPaid('${esc(o.id)}', true)" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-3 rounded-lg text-xs">Marcar pago</button>`}
+            <button onclick="setOrderStatus('${esc(o.id)}', 'producao')" class="text-[11px] text-slate-400 hover:text-slate-200 underline">Voltar para a fila</button>
+          </div>
+        </div>`;
+      }).join('');
     }
 
     function renderQueue() {
@@ -1389,13 +1452,14 @@
             ${o.notes ? `<p class="text-xs text-amber-300 whitespace-pre-line"><i class="fa-solid fa-note-sticky"></i> ${esc(o.notes)}</p>` : ''}
             <p class="text-[11px] text-slate-500 mt-1">Pedido em ${esc(o.date)}${cl && cl.phone ? ` · ${esc(cl.phone)}` : ''}</p>
           </div>
-          <button onclick="setOrderStatus('${esc(o.id)}', 'vendido')" class="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-lg text-xs">Concluir</button>
+          <button onclick="setOrderStatus('${esc(o.id)}', 'impresso')" class="shrink-0 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-3 rounded-lg text-xs">Impresso</button>
         </div>`;
       }).join('');
     }
 
     function renderClients() {
       renderQueue();
+      renderWaiting();
       const qp = {};
       queueOrders().forEach((o, i) => { qp[o.id] = i + 1; });
       fillColorList();
@@ -1413,12 +1477,12 @@
       box.innerHTML = allClients.map(c => {
         const os = allOrders.filter(o => o.clientId === c.id);
         let sold = 0, prod = 0;
-        os.forEach(o => { const v = num(o.qty) * num(o.unitPrice); if (o.status === 'vendido') sold += v; else prod += v; });
+        os.forEach(o => { const v = num(o.qty) * num(o.unitPrice); if (paidOf(o)) sold += v; else prod += v; });
         const rows = os.map(o => {
           const pr = allProjects.find(x => x.id === o.projectId);
           const lucro = pr ? num(o.qty) * (num(o.unitPrice) * (1 - num(pr.tax) / 100) - num(pr.totalCost)) : null;
           const thumb = (pr && (pr.image || '').startsWith('data:image/')) ? `<img src="${pr.image}" alt="" class="order-first w-12 h-12 object-cover rounded-lg border border-slate-700">` : '';
-          const opt = (v, t) => `<option value="${v}" ${o.status === v ? 'selected' : ''}>${t}</option>`;
+          const opt = (v, t) => `<option value="${v}" ${stOf(o) === v ? 'selected' : ''}>${t}</option>`;
           return `
           <div class="flex flex-wrap items-center gap-3 bg-slate-800/60 p-2.5 rounded-lg text-xs">
             ${thumb}
@@ -1431,7 +1495,8 @@
               ${o.notes ? `<div class="text-amber-300 whitespace-pre-line mt-1"><i class="fa-solid fa-note-sticky"></i> ${esc(o.notes)}</div>` : ''}
             </div>
             <div class="flex items-center gap-2 ml-auto">
-              <select onchange="setOrderStatus('${esc(o.id)}', this.value)" class="bg-slate-800 border border-slate-600 rounded-lg text-xs p-1.5 text-white">${opt('producao', 'Em produção')}${opt('vendido', 'Vendido / entregue')}</select>
+              <select onchange="setOrderStatus('${esc(o.id)}', this.value)" class="bg-slate-800 border border-slate-600 rounded-lg text-xs p-1.5 text-white">${opt('producao', 'Em produção')}${opt('impresso', 'Impresso (aguardando)')}${opt('entregue', 'Entregue')}</select>
+              <label class="flex items-center gap-1 text-[11px] text-slate-300 cursor-pointer"><input type="checkbox" ${paidOf(o) ? 'checked' : ''} onchange="setOrderPaid('${esc(o.id)}', this.checked)"> Pago</label>
               <button onclick="editOrder('${esc(o.id)}')" class="text-amber-400 hover:text-amber-300 p-1" title="Editar pedido"><i class="fa-solid fa-pen"></i></button>
               <button onclick="deleteDoc('orders', '${esc(o.id)}')" class="text-red-400 hover:text-red-300 p-1"><i class="fa-solid fa-trash"></i></button>
             </div>
@@ -1447,7 +1512,7 @@
             </div>
             <button onclick="deleteClient('${esc(c.id)}')" class="text-red-400 hover:text-red-300 text-xs"><i class="fa-solid fa-trash"></i> Excluir cliente</button>
           </div>
-          <p class="text-xs text-slate-400">Vendido: <b class="text-emerald-400">${money(sold)}</b> · Em produção: <b class="text-amber-400">${money(prod)}</b></p>
+          <p class="text-xs text-slate-400">Recebido: <b class="text-emerald-400">${money(sold)}</b> · A receber: <b class="text-amber-400">${money(prod)}</b></p>
           <div class="space-y-2">${rows}</div>
         </div>`;
       }).join('');
@@ -1699,19 +1764,19 @@
       const term = $('proj-search').value.trim().toLowerCase();
       $('cat-list').innerHTML = [...new Set(allProjects.map(p => p.category).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('');
 
-      let rev = 0, profit = 0, sold = 0, prod = 0;
+      let rev = 0, profit = 0, sold = 0, prod = 0, toReceive = 0;
       allOrders.forEach(o => {
-        const q = num(o.qty);
-        if (o.status === 'vendido') {
+        const q = num(o.qty), val = q * num(o.unitPrice);
+        if (stOf(o) === 'entregue') sold += q; else prod += q;
+        if (paidOf(o)) {
           const pr = allProjects.find(x => x.id === o.projectId);
-          rev += q * num(o.unitPrice);
+          rev += val;
           profit += pr ? q * (num(o.unitPrice) * (1 - num(pr.tax) / 100) - num(pr.totalCost)) : 0;
-          sold += q;
-        } else prod += q;
+        } else toReceive += val;
       });
       const stockTotal = allProjects.reduce((a, p) => a + num(p.stock), 0);
       const tile = (t, v, c) => `<div class="bg-slate-900 p-3 rounded-xl border border-slate-700"><span class="text-[10px] text-slate-400 block uppercase">${t}</span><span class="font-bold text-sm ${c}">${v}</span></div>`;
-      $('proj-summary').innerHTML = tile('Peças vendidas', sold, 'text-cyan-400') + tile('Em produção', prod, 'text-amber-400') + tile('Em estoque', stockTotal, 'text-violet-300') + tile('Faturamento', money(rev), 'text-emerald-400') + tile('Lucro', money(profit), 'text-amber-400');
+      $('proj-summary').innerHTML = tile('Peças entregues', sold, 'text-cyan-400') + tile('Em produção / impressas', prod, 'text-amber-400') + tile('Em estoque', stockTotal, 'text-violet-300') + tile('Faturamento (recebido)', money(rev), 'text-emerald-400') + tile('Lucro (recebido)', money(profit), 'text-amber-400') + tile('A receber', money(toReceive), 'text-rose-300');
 
       const container = $('projects-list');
       if (!allProjects.length) { container.innerHTML = '<p class="text-xs text-slate-500">Nenhum projeto salvo ainda. Calcule uma peça e clique em "Salvar Projeto".</p>'; return; }
@@ -1726,9 +1791,9 @@
         const q = num(p.qty) || 1;
         const batch = num(p.batchCost) || num(p.totalCost) * q;
         const po = allOrders.filter(o => o.projectId === p.id);
-        const soldO = po.filter(o => o.status === 'vendido');
+        const soldO = po.filter(o => stOf(o) === 'entregue');
         const sUn = soldO.reduce((a, o) => a + num(o.qty), 0);
-        const pUn = po.filter(o => o.status !== 'vendido').reduce((a, o) => a + num(o.qty), 0);
+        const pUn = po.filter(o => stOf(o) !== 'entregue').reduce((a, o) => a + num(o.qty), 0);
         const sRev = soldO.reduce((a, o) => a + num(o.qty) * num(o.unitPrice), 0);
         const sub = num(p.filCost) + num(p.energyCost) + num(p.wearCost) + num(p.nozzleCostTotal);
         const failCost = sub * (1 - 1 / (1 + num(p.fail) / 100));
@@ -1798,7 +1863,7 @@
           const ps = cats[c];
           const withImg = ps.find(p => (p.image || '').startsWith('data:image/')) || ps[0];
           const stk = ps.reduce((a, p) => a + num(p.stock), 0);
-          const sUn = allOrders.filter(o => o.status === 'vendido' && ps.some(p => p.id === o.projectId)).reduce((a, o) => a + num(o.qty), 0);
+          const sUn = allOrders.filter(o => stOf(o) === 'entregue' && ps.some(p => p.id === o.projectId)).reduce((a, o) => a + num(o.qty), 0);
           return `<button type="button" data-cat="${esc(c)}" onclick="openCategory(this.dataset.cat)" class="text-left p-3 rounded-2xl border border-slate-700 bg-slate-900 hover:border-cyan-500 transition-colors space-y-2">
             ${thumb(withImg, 'w-full aspect-square')}
             <p class="font-bold text-cyan-400 text-sm break-words"><i class="fa-solid fa-tag text-xs"></i> ${esc(c)}</p>
